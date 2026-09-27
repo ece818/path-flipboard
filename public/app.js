@@ -365,7 +365,12 @@ async function loadStation(code) {
         lastLiveFail = Date.now();
         lastLiveErrors = e?.details || [e?.message || String(e)];
         console.warn('live upgrade failed:', lastLiveErrors.join(' | '));
-        if (isStale) alertBox.dataset.diag = lastLiveErrors.join(' | ');
+        if (isStale) {
+          alertBox.dataset.diag = lastLiveErrors.join(' | ');
+          if (alertBox.dataset.showDiag) {
+            alertBox.textContent = 'DIAG: ' + alertBox.dataset.diag + ' — tap to hide';
+          }
+        }
       }
     }
   } catch (e) {
@@ -388,8 +393,11 @@ function renderData(data, normalized) {
   metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
   if (isStale) {
     setStatus('error', 'STALE');
-    alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Check connection; retrying automatically.`;
+    alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Retrying automatically (tap for details).`;
     alertBox.classList.remove('hidden');
+    delete alertBox.dataset.showDiag;
+    delete alertBox.dataset.short;
+    if (lastLiveErrors.length) alertBox.dataset.diag = lastLiveErrors.join(' | ');
   } else {
     delete alertBox.dataset.diag;
     delete alertBox.dataset.showDiag;
@@ -437,16 +445,17 @@ document.getElementById('exitTheater').addEventListener('click', toggleTheater);
 clearFilterBtn.addEventListener('click', clearFilter);
 alertBox.style.cursor = 'pointer';
 alertBox.addEventListener('click', () => {
-  const d = alertBox.dataset.diag;
-  if (!d) return;
   if (alertBox.dataset.showDiag) {
     delete alertBox.dataset.showDiag;
     alertBox.textContent = alertBox.dataset.short || alertBox.textContent;
-  } else {
-    alertBox.dataset.showDiag = '1';
-    alertBox.dataset.short = alertBox.textContent;
-    alertBox.textContent = 'DIAG: ' + d + ' — tap to hide';
+    return;
   }
+  const d = alertBox.dataset.diag;
+  alertBox.dataset.short = alertBox.textContent;
+  alertBox.dataset.showDiag = '1';
+  alertBox.textContent = d
+    ? 'DIAG: ' + d + ' — tap to hide'
+    : 'DIAG: live attempt in progress — wait a few seconds, then tap again to hide';
 });
 document.querySelectorAll('.badge').forEach(b => {
   b.addEventListener('click', () => setLineFilter(b.dataset.line));
