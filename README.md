@@ -30,6 +30,18 @@ GitHub Pages serves static files only, so the board reads a snapshot at
    departed trains auto-hide. If live refresh fails and the snapshot is over
    10 min old, rows honestly show `STALE` instead of fake `00 BOARDING`.
 
+## Truly live data (recommended, 5 min, free)
+
+Public CORS proxies are flaky, so for reliable auto-updates deploy your own
+proxy (Cloudflare free tier, ~100k req/day):
+
+1. https://dash.cloudflare.com → Workers & Pages → Create Worker → Deploy.
+2. Edit code → paste in `worker.js` from this repo → Deploy.
+3. Open the board once with the worker URL:
+   `https://<you>.github.io/path-flipboard/?live=https://<worker>.<you>.workers.dev`
+   It saves the URL and uses it on every refresh from then on — real live
+   arrivals every 15s, no redeploys needed.
+
 Notes:
 - Scheduled workflows pause after 60 days of repo inactivity; any new push or
   manual **Run workflow** re-arms them.

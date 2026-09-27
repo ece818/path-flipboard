@@ -13,6 +13,19 @@ const clockDate = document.getElementById('clockDate');
 
 const STATION_NAMES = { NWK:'NEWARK', HAR:'HARRISON', JSQ:'JOURNAL SQUARE', GRV:'GROVE STREET', EXP:'EXCHANGE PLACE', NEW:'NEWPORT', HOB:'HOBOKEN', WTC:'WORLD TRADE CENTER', CHR:'CHRISTOPHER ST', '09S':'9TH STREET', '14S':'14TH STREET', '23S':'23RD STREET', '33S':'33RD STREET' };
 
+/* Live proxy: your own Cloudflare Worker (see worker.js). Configure once via
+   ?live=https://<you>.workers.dev — saved to localStorage from then on.
+   Falls back to WORKER_URL below, then public CORS proxies, then snapshot. */
+const WORKER_URL = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get('live');
+    if (q && q.startsWith('https://')) localStorage.setItem('path:worker', q.replace(/\/$/, ''));
+    return localStorage.getItem('path:worker') || ''; // or hard-code 'https://<you>.workers.dev' here
+  } catch {
+    return '';
+  }
+})();
+
 /* ---------- split-flap digit ---------- */
 function makeFlip(char = '0') {
   const el = document.createElement('span');
@@ -280,7 +293,21 @@ async function loadSnapshot(code) {
   return { ...shapeStationData(code, raw, 'static snapshot'), live: false, ageMin };
 }
 async function loadLive(code) {
-  // local dev proxy first (fast, no CORS issues when running node server.js)
+  // 0) your own Cloudflare Worker (fast, reliable — see worker.js)
+  if (WORKER_URL) {
+    try {
+      const j = await fetchWithTimeout(WORKER_URL, 8000);
+      const raw = Array.isArray(j) ? { results: j } : j;
+      if (Array.isArray(raw.results)) {
+        raw.fetchedAt = raw.fetchedAt || new Date().toISOString();
+        return { ...shapeStationData(code, raw, 'live'), live: true, ageMin: 0 };
+      }
+      throw new Error('unexpected payload shape');
+    } catch (e) {
+      console.warn('worker proxy failed:', e?.message || e);
+    }
+  }
+  // local dev proxy (fast, no CORS issues when running node server.js)
   try {
     const c = new AbortController();
     const t = setTimeout(() => c.abort(), 4000);
