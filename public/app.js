@@ -124,9 +124,9 @@ function buildBoard(data) {
     const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
     // One countdown (flips), one destination, one sub-line. No duplicates.
     row.innerHTML = `
-      <div><div class="flips"></div><div class="row-status">${st.label}</div></div>
-      <div><div class="dest"></div><div class="row-sub">${dirTag} • ${m.line.short}</div></div>
-      <div class="status"><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
+      <div class="col-time"><div class="flips"></div><div class="row-status">${st.label}</div></div>
+      <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line">${m.line.short}</span></div></div>
+      <div class="status col-line"><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
     renderFlips(row.querySelector('.flips'), flipString(sec));
     renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
     scheduleEl.appendChild(row);
