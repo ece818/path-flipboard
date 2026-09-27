@@ -142,7 +142,38 @@ button:hover{border-color:var(--amber)}
 
 @media (max-width:700px){
   .board-head-row{display:none}
-  .row{grid-template-columns:1fr;gap:8px}
-  .status{text-align:left}
-  .board-actions{margin-left:0}
+  .station-shell{padding:16px 10px 40px}
+  .station-head{gap:10px;margin-bottom:12px}
+  .path-roundel{width:44px;height:44px;font-size:12px;border-width:3px}
+  .station-head h1{font-size:18px;letter-spacing:.1em}
+  .station-head .sub{font-size:11px;letter-spacing:.12em}
+  .head-clock{text-align:left}
+  .clock-label{font-size:10px;margin-bottom:4px}
+  .clock-flips{gap:2px;justify-content:flex-start}
+  .clock-flips .flip{font-size:20px}
+  .clock-flips .colon{font-size:16px}
+  .board-frame{padding:12px 10px 10px;border-radius:10px}
+  .board-topbar{gap:8px}
+  .board-station{flex:1 1 100%}
+  select{font-size:15px;padding:8px 10px;max-width:100%;width:100%}
+  .board-actions{margin-left:0;width:100%;justify-content:space-between}
+  button{font-size:15px;padding:7px 10px}
+  .auto{font-size:11px}
+  .board-signal{font-size:11px;padding:7px 9px;margin-left:auto}
+  .board-meta{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:6px 0 8px}
+  .flap-board{padding:6px;gap:6px}
+  /* compact row: countdown | destination | chip on ONE line */
+  .row{grid-template-columns:auto 1fr auto;gap:8px;padding:8px;align-items:center}
+  .status{text-align:right}
+  .flip{font-size:19px;width:.68em}
+  .colon{font-size:16px}
+  .row-status{font-size:10px;margin-top:4px}
+  .dest{gap:2px}
+  .tile{font-size:12px;min-width:.9em;padding:.18em .02em}
+  .tile.space{min-width:.3em}
+  .row-sub{font-size:9.5px;margin-top:4px;letter-spacing:.08em}
+  .line-chip{font-size:9.5px;padding:1px 5px}
+  .board-foot{gap:6px;font-size:10px}
+  .badge{font-size:10px;padding:1px 6px}
+  .foot-note{font-size:10px}
 }
