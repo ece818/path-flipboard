@@ -92,6 +92,7 @@ function statusFor(sec) {
 /* Shorten long headsigns so tile rows never wrap */
 function shortDest(text) {
   return text.toUpperCase()
+    .replace('33RD STREET VIA HOBOKEN', '33RD VIA HOB')
     .replace('STREET', 'ST')
     .replace('VIA HOBOKEN', 'VIA HOB')
     .replace('JOURNAL SQUARE', 'JOURNAL SQ')
