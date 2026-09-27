@@ -85,6 +85,7 @@ function flipString(sec) {
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
 }
 function statusFor(sec) {
+  if (isStale) return { cls: '', label: 'STALE' }; // snapshot too old to trust — say so
   if (sec <= 30) return { cls: 'due', label: 'BOARDING' };
   if (sec < 120) return { cls: 'approach', label: 'APPROACHING' };
   return { cls: '', label: '' }; // normal: countdown flips say it all, no duplicate text
@@ -105,6 +106,8 @@ function shortDest(text) {
 let trains = [];   // flat sorted list
 let rowRefs = [];  // [{flipsEl, statusEl, msg}]
 let lastData = null;
+let isStale = false;
+let loading = false;
 let lineFilter = localStorage.getItem('path:lineFilter') || null; // e.g. 'NWK-WTC' or 'JSQ-33'
 let destFilter = localStorage.getItem('path:destFilter') || null; // e.g. 'NEWARK' (raw headSign upper)
 
@@ -269,43 +272,115 @@ function shapeStationData(code, raw, fetchedVia) {
     })),
   };
 }
-async function fetchStation(code) {
+async function loadSnapshot(code) {
+  const res = await fetch('data/realtime.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`static ${res.status}`);
+  const raw = await res.json();
+  const ageMin = (Date.now() - new Date(raw.fetchedAt || 0).getTime()) / 60000;
+  return { ...shapeStationData(code, raw, 'static snapshot'), live: false, ageMin };
+}
+async function loadLive(code) {
+  // local dev proxy first (fast, no CORS issues when running node server.js)
   try {
-    const res = await fetch('data/realtime.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`static ${res.status}`);
-    return shapeStationData(code, await res.json(), 'static snapshot');
-  } catch {
-    const res = await fetch(`/api/realtime?station=${encodeURIComponent(code)}`);
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), 4000);
+    try {
+      const res = await fetch(`/api/realtime?station=${encodeURIComponent(code)}`, { signal: c.signal });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.error) return { ...data, fetchedVia: 'live proxy', live: true, ageMin: 0 };
+      }
+    } finally {
+      clearTimeout(t);
+    }
+  } catch { /* static hosts 404 here — try PANYNJ below */ }
+  // PANYNJ blocks browser CORS, so go via public CORS proxies
+  const raw = await fetchLiveRaw();
+  raw.fetchedAt = raw.fetchedAt || new Date().toISOString();
+  return { ...shapeStationData(code, raw, 'live'), live: true, ageMin: 0 };
+}
+const PANYNJ_URL = 'https://www.panynj.gov/bin/portauthority/ridepath.json';
+async function fetchWithTimeout(url, ms = 6000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: c.signal, cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return { ...data, fetchedVia: 'live proxy' };
+    return await res.json();
+  } finally {
+    clearTimeout(t);
   }
 }
+async function fetchLiveRaw() {
+  const url = `${PANYNJ_URL}?timeStamp=${Date.now()}`;
+  const attempts = [
+    url, // direct — works if PANYNJ ever sends CORS headers
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
+  ];
+  let lastErr = null;
+  for (const u of attempts) {
+    try {
+      const j = await fetchWithTimeout(u);
+      if (Array.isArray(j.results)) return j;
+      throw new Error('unexpected payload shape');
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('live fetch failed');
+}
+let lastLiveFail = 0;
 function setStatus(state, text) {
   statusPill.className = 'board-signal ' + state;
   statusText.textContent = text;
 }
 let timer = null;
 async function loadStation(code) {
+  if (loading) return;
+  loading = true;
   const normalized = code.toUpperCase();
   setStatus('loading', 'SYNC');
   alertBox.classList.add('hidden');
   metaLine.textContent = `SYNCING ${STATION_NAMES[normalized] || normalized}…`;
   try {
-    const data = await fetchStation(normalized);
-    buildBoard(data);
-    const lastUpd = data.lastUpdated
-      ? new Date(data.lastUpdated).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
-      : 'now';
-    metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
-    setStatus('', 'LIVE');
+    // fast paint from the static snapshot, then upgrade to live data in place
+    renderData(await loadSnapshot(normalized), normalized);
+    if (!lastLiveFail || Date.now() - lastLiveFail > 45000) {
+      try {
+        renderData(await loadLive(normalized), normalized);
+        lastLiveFail = 0;
+      } catch (e) {
+        lastLiveFail = Date.now();
+        console.warn('live upgrade failed:', e?.message || e);
+      }
+    }
   } catch (e) {
     console.error(e);
-    alertBox.textContent = `SIGNAL LOST: ${e.message}. Run the local server (npm start) — the browser cannot reach panynj.gov directly (CORS).`;
+    alertBox.textContent = `SIGNAL LOST: ${e.message}. Retrying automatically.`;
     alertBox.classList.remove('hidden');
     setStatus('error', 'OFFLINE');
     scheduleEl.innerHTML = `<div class="empty">— SIGNAL LOST —</div>`;
+  } finally {
+    loading = false;
+  }
+}
+function renderData(data, normalized) {
+  isStale = !data.live && (data.ageMin || 0) > 10;
+  buildBoard(data);
+  const lastUpd = data.lastUpdated
+    ? new Date(data.lastUpdated).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
+    : 'now';
+  const src = data.live ? 'LIVE' : `SNAPSHOT ${Math.max(1, Math.round(data.ageMin || 0))}M OLD`;
+  metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
+  if (isStale) {
+    setStatus('error', 'STALE');
+    alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Check connection; retrying automatically.`;
+    alertBox.classList.remove('hidden');
+  } else {
+    alertBox.classList.add('hidden');
+    setStatus('', 'LIVE');
   }
 }
 function scheduleAuto() {

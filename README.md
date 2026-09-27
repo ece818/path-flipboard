@@ -24,8 +24,11 @@ GitHub Pages serves static files only, so the board reads a snapshot at
 3. Push (or wait ~5 min for the schedule). The `deploy-pages` workflow
    (`.github/workflows/pages.yml`) fetches fresh PANYNJ data, then publishes
    `public/` to `https://<you>.github.io/<repo>/`.
-4. Done — share the link. Data refreshes every 5 min; the countdowns keep
-   ticking client-side between refreshes, and departed trains auto-hide.
+4. Done — share the link. In the browser the board paints instantly from the
+   snapshot, then upgrades to true live data via CORS proxies on every 15s
+   refresh; countdowns keep ticking client-side between refreshes, and
+   departed trains auto-hide. If live refresh fails and the snapshot is over
+   10 min old, rows honestly show `STALE` instead of fake `00 BOARDING`.
 
 Notes:
 - Scheduled workflows pause after 60 days of repo inactivity; any new push or
