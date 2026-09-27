@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NJ PATH — Departures</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="station-shell">
+    <header class="station-head">
+      <div class="head-left">
+        <div class="path-roundel">PATH</div>
+        <div>
+          <h1>New Jersey Departures</h1>
+          <p class="sub">Port Authority Trans-Hudson • Live board</p>
+        </div>
+      </div>
+      <div class="head-clock">
+        <div class="clock-label" id="clockDate">—</div>
+        <div class="clock-flips" id="stationClock" aria-label="current time"></div>
+      </div>
+    </header>
+
+    <section class="board-frame">
+      <div class="board-screws"><span></span><span></span><span></span><span></span></div>
+      <div class="board-topbar">
+        <div class="board-station">
+          <label for="stationSelect">STATION</label>
+          <select id="stationSelect">
+            <option value="NWK">NEWARK</option>
+            <option value="HAR">HARRISON</option>
+            <option value="JSQ" selected>JOURNAL SQUARE</option>
+            <option value="GRV">GROVE STREET</option>
+            <option value="EXP">EXCHANGE PLACE</option>
+            <option value="NEW">NEWPORT</option>
+            <option value="HOB">HOBOKEN</option>
+          </select>
+        </div>
+        <div class="board-actions">
+          <button id="refreshBtn" title="Refresh">↻</button>
+          <label class="auto"><input type="checkbox" id="autoRefresh" checked> AUTO 15s</label>
+        </div>
+        <div class="board-signal" id="statusPill"><span class="lamp"></span><span id="statusText">LIVE</span></div>
+      </div>
+
+      <div class="board-meta" id="metaLine">Warming up the flaps…</div>
+      <div id="alertBox" class="alert hidden"></div>
+
+      <div class="board-head-row">
+        <span class="col-time">DUE IN</span>
+        <span class="col-dest">DESTINATION</span>
+        <span class="col-status">STATUS</span>
+      </div>
+      <section id="schedule" class="flap-board" aria-live="polite"></section>
+
+      <div class="board-foot">
+        <span class="badge" style="--c:#D93A30">NWK–WTC</span>
+        <span class="badge" style="--c:#FF9900">JSQ–33</span>
+        <span class="badge" style="--c:#4D92FB">HOB–33</span>
+        <span class="badge" style="--c:#65C100">HOB–WTC</span>
+        <span class="foot-note">Times are real-time projections • <a href="data/realtime.json" target="_blank">raw JSON</a> • <a href="https://www.panynj.gov/path/" target="_blank">panynj.gov/path</a></span>
+      </div>
+    </section>
+
+    <details class="fallback">
+      <summary>Typical weekday intervals (if realtime is down)</summary>
+      <table class="timetable">
+        <thead><tr><th>Hours</th><th>NWK–WTC</th><th>JSQ–33</th><th>HOB lines</th></tr></thead>
+        <tbody>
+          <tr><td>6am–11pm</td><td>every 5–8 min</td><td>every 5–8 min</td><td>every 5–10 min</td></tr>
+          <tr><td>11pm–6am</td><td colspan="3">JSQ–33 via Hoboken every 10–20 min + NWK–WTC every 15–30 min</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
