@@ -322,8 +322,6 @@ async function fetchLiveRaw() {
       if (!Array.isArray(inner.results)) throw new Error('unexpected payload shape');
       return inner;
     }],
-    ['isomorphic-git', () => fetchWithTimeout(`https://cors.isomorphic-git.org/${url}`)],
-    ['cors-workers', () => fetchWithTimeout(`https://test.cors.workers.dev/?${url}`)],
     ['codetabs', () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`)],
     ['cors.lol', () => fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(url)}`)],
   ];
