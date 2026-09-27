@@ -169,10 +169,10 @@ body.theater .board-foot,
 body.theater .fallback{display:none}
 body.theater .board-frame{padding:8px;border-radius:8px}
 body.theater .flap-board{gap:8px}
-/* small floating exit button — only visible in theater mode */
-.exit-theater{display:none;position:fixed;top:10px;right:10px;z-index:50;
-  width:32px;height:32px;border-radius:50%;font-size:15px;line-height:1;
-  background:rgba(0,0,0,.6);color:var(--muted);border:1px solid #3a3a40;cursor:pointer}
+/* small floating exit button — only visible in theater mode, centered below the board */
+.exit-theater{display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;
+  width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;
+  background:rgba(0,0,0,.65);color:var(--muted);border:1px solid #3a3a40;cursor:pointer}
 .exit-theater:hover{color:var(--amber);border-color:var(--amber)}
 body.theater .exit-theater{display:block}
 
