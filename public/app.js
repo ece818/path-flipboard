@@ -306,7 +306,15 @@ function scheduleAuto() {
   if (autoRefresh.checked) timer = setInterval(() => loadStation(stationSelect.value), 15000);
 }
 
-stationSelect.addEventListener('change', () => { localStorage.setItem('path:njStation', stationSelect.value); loadStation(stationSelect.value); });
+stationSelect.addEventListener('change', () => {
+  localStorage.setItem('path:njStation', stationSelect.value);
+  // a filter from the old station (e.g. NEWARK) would hide most of the new
+  // station's trains, looking like "future trains missing" — reset it
+  lineFilter = null;
+  destFilter = null;
+  updateFilterUI();
+  loadStation(stationSelect.value);
+});
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
 autoRefresh.addEventListener('change', () => { localStorage.setItem('path:autoRefresh', autoRefresh.checked ? '1' : '0'); scheduleAuto(); });
 clearFilterBtn.addEventListener('click', clearFilter);
