@@ -103,20 +103,77 @@ function shortDest(text) {
 /* ---------- board render ---------- */
 let trains = [];   // flat sorted list
 let rowRefs = [];  // [{flipsEl, statusEl, msg}]
+let lastData = null;
+let lineFilter = localStorage.getItem('path:lineFilter') || null; // e.g. 'NWK-WTC' or 'JSQ-33'
+let destFilter = localStorage.getItem('path:destFilter') || null; // e.g. 'NEWARK' (raw headSign upper)
+
+const filterBar = document.getElementById('filterBar');
+const filterText = document.getElementById('filterText');
+const clearFilterBtn = document.getElementById('clearFilter');
+
+function lineMatches(m, f) {
+  if (!f) return true;
+  if (f === 'JSQ-33') return m.line.short.startsWith('JSQ-33'); // badge covers JSQ-33 + via HOB
+  return m.line.short === f;
+}
+function applyFilters(list) {
+  return list.filter(m => {
+    if (lineFilter && !lineMatches(m, lineFilter)) return false;
+    if (destFilter && m.headSign.toUpperCase() !== destFilter) return false;
+    return true;
+  });
+}
+function updateFilterUI() {
+  const label = lineFilter || destFilter;
+  const kind = lineFilter ? 'LINE' : destFilter ? 'DEST' : null;
+  filterBar.classList.toggle('hidden', !label);
+  if (label) filterText.textContent = `SHOWING ${kind}: ${label} — TAP AGAIN TO CLEAR`;
+  document.querySelectorAll('.badge').forEach(b => {
+    b.classList.toggle('active', !!lineFilter && b.dataset.line === lineFilter);
+  });
+  localStorage.setItem('path:lineFilter', lineFilter || '');
+  localStorage.setItem('path:destFilter', destFilter || '');
+}
+function setLineFilter(value) {
+  lineFilter = (lineFilter === value) ? null : value;
+  if (lineFilter) destFilter = null;
+  updateFilterUI();
+  if (lastData) buildBoard(lastData);
+}
+function setDestFilter(value) {
+  destFilter = (destFilter === value) ? null : value;
+  if (destFilter) lineFilter = null;
+  updateFilterUI();
+  if (lastData) buildBoard(lastData);
+}
+function clearFilter() {
+  lineFilter = null;
+  destFilter = null;
+  updateFilterUI();
+  if (lastData) buildBoard(lastData);
+}
 
 function buildBoard(data) {
+  lastData = data;
   scheduleEl.innerHTML = '';
   rowRefs = [];
   trains = data.destinations.flatMap(d => d.messages.map(m => ({ ...m, dir: d.label })));
   // Drop trains that departed a while ago (snapshot may be minutes old).
   trains = trains.filter(m => remainingSec(m) > -120);
   trains.sort((a, b) => remainingSec(a) - remainingSec(b));
+  const visible = applyFilters(trains).slice(0, 10);
 
   if (!trains.length) {
     scheduleEl.innerHTML = `<div class="empty">— NO TRAINS REPORTED —</div>`;
     return;
   }
-  for (const m of trains.slice(0, 10)) {
+  if (!visible.length) {
+    const label = lineFilter || destFilter || 'FILTER';
+    scheduleEl.innerHTML = `<div class="empty tappable">— NO ${label} TRAINS — TAP TO CLEAR —</div>`;
+    scheduleEl.querySelector('.empty').addEventListener('click', clearFilter);
+    return;
+  }
+  for (const m of visible) {
     const sec = remainingSec(m);
     const st = statusFor(sec);
     const row = document.createElement('div');
@@ -129,6 +186,15 @@ function buildBoard(data) {
       <div class="status col-line"><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
     renderFlips(row.querySelector('.flips'), flipString(sec));
     renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
+    // tap destination → filter to that destination; tap chip → filter to that line
+    const destEl = row.querySelector('.dest');
+    destEl.title = `Show only ${m.headSign}`;
+    if (destFilter === m.headSign.toUpperCase()) destEl.classList.add('active');
+    destEl.addEventListener('click', () => setDestFilter(m.headSign.toUpperCase()));
+    const chipEl = row.querySelector('.line-chip');
+    chipEl.title = `Show only ${m.line.short}`;
+    if (lineFilter && lineMatches(m, lineFilter)) chipEl.classList.add('active');
+    chipEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
     scheduleEl.appendChild(row);
     rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), row, msg: m });
   }
@@ -243,11 +309,19 @@ function scheduleAuto() {
 stationSelect.addEventListener('change', () => { localStorage.setItem('path:njStation', stationSelect.value); loadStation(stationSelect.value); });
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
 autoRefresh.addEventListener('change', () => { localStorage.setItem('path:autoRefresh', autoRefresh.checked ? '1' : '0'); scheduleAuto(); });
+clearFilterBtn.addEventListener('click', clearFilter);
+document.querySelectorAll('.badge').forEach(b => {
+  b.addEventListener('click', () => setLineFilter(b.dataset.line));
+});
 
 const saved = localStorage.getItem('path:njStation');
 if (saved && STATION_NAMES[saved]) stationSelect.value = saved;
 const savedAuto = localStorage.getItem('path:autoRefresh');
 if (savedAuto !== null) autoRefresh.checked = savedAuto === '1';
+// drop stale filters saved as empty strings
+if (!lineFilter) lineFilter = null;
+if (!destFilter) destFilter = null;
+updateFilterUI();
 
 loadStation(stationSelect.value);
 scheduleAuto();

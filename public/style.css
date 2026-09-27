@@ -74,6 +74,11 @@ button:hover{border-color:var(--amber)}
 @keyframes pulse{50%{opacity:.4}}
 
 .board-meta{color:var(--muted);font-size:12px;letter-spacing:.12em;margin:2px 0 12px}
+.filter-bar{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:11px;letter-spacing:.15em;color:var(--amber);
+  background:#1a1206;border:1px solid #5a4413;border-radius:6px;padding:7px 10px}
+.filter-bar button{font:inherit;font-size:13px;background:transparent;border:1px solid #5a4413;color:var(--amber);
+  border-radius:4px;padding:1px 8px;cursor:pointer;box-shadow:none;margin-left:auto}
+.filter-bar button:hover{border-color:var(--amber)}
 .alert{margin:0 0 12px;background:#2a0d0d;border:1px solid #7f1d1d;color:#ffb4b4;padding:10px 12px;border-radius:6px;font-size:13px;letter-spacing:.04em}
 .hidden{display:none}
 
@@ -98,7 +103,10 @@ button:hover{border-color:var(--amber)}
 .row.due .row-status{color:var(--green)}
 .status{text-align:right}
 .status small{display:block;color:var(--muted);font-size:11px;letter-spacing:.2em;margin-top:6px}
-.line-chip{display:inline-block;font-size:11px;letter-spacing:.1em;border:1px solid var(--c);color:var(--c);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.line-chip{display:inline-block;font-size:11px;letter-spacing:.1em;border:1px solid var(--c);color:var(--c);border-radius:4px;padding:2px 6px;white-space:nowrap;
+  background:transparent;font-family:inherit;cursor:pointer}
+.line-chip:hover{filter:brightness(1.4)}
+.line-chip.active{background:var(--c);color:#000;font-weight:700}
 
 /* split-flap digit */
 .flip{position:relative;display:inline-block;width:.72em;height:1.15em;font-size:clamp(24px,4.6vw,38px);
@@ -118,8 +126,10 @@ button:hover{border-color:var(--amber)}
 @keyframes blink{50%{opacity:.25}}
 .clock-flips .flip{font-size:30px}
 
-/* destination letter tiles — single line, no wrap */
-.dest{display:flex;flex-wrap:nowrap;gap:3px;overflow:hidden}
+/* destination letter tiles — single line, no wrap, tap to filter */
+.dest{display:flex;flex-wrap:nowrap;gap:3px;overflow:hidden;cursor:pointer;border-radius:2px}
+.dest:hover{filter:brightness(1.25)}
+.dest.active{outline:1px solid var(--amber);outline-offset:2px}
 .tile{
   display:inline-block;min-width:.95em;padding:.22em .05em;text-align:center;flex:0 1 auto;
   font-size:clamp(14px,2.2vw,20px);color:var(--text);background:linear-gradient(180deg,#1b1b1f 49.2%,#000 49.2% 50.8%,#0e0e10 50.8%);
@@ -132,7 +142,10 @@ button:hover{border-color:var(--amber)}
 
 /* footer */
 .board-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:11px;letter-spacing:.1em;color:var(--muted)}
-.badge{border:1px solid var(--c);color:var(--c);border-radius:4px;padding:2px 8px;font-size:11px}
+.badge{border:1px solid var(--c);color:var(--c);border-radius:4px;padding:2px 8px;font-size:11px;
+  background:transparent;font-family:inherit;letter-spacing:.1em;cursor:pointer}
+.badge:hover{filter:brightness(1.4)}
+.badge.active{background:var(--c);color:#000;font-weight:700}
 .foot-note{margin-left:auto}
 .foot-note a{color:var(--amber)}
 .fallback{margin-top:18px;color:var(--muted);font-size:13px}
@@ -141,6 +154,8 @@ button:hover{border-color:var(--amber)}
 .timetable th,.timetable td{border:1px solid #3a3a40;padding:6px 8px;text-align:left}
 
 .empty{padding:26px;text-align:center;letter-spacing:.25em;color:var(--muted)}
+.empty.tappable{cursor:pointer}
+.empty.tappable:hover{color:var(--amber)}
 
 @media (max-width:700px){
   .board-head-row{display:none}

@@ -47,6 +47,7 @@
       </div>
 
       <div class="board-meta" id="metaLine">Warming up the flaps…</div>
+      <div id="filterBar" class="filter-bar hidden"><span id="filterText"></span><button id="clearFilter" title="Show all trains">✕</button></div>
       <div id="alertBox" class="alert hidden"></div>
 
       <div class="board-head-row">
@@ -57,10 +58,10 @@
       <section id="schedule" class="flap-board" aria-live="polite"></section>
 
       <div class="board-foot">
-        <span class="badge" style="--c:#D93A30">NWK–WTC</span>
-        <span class="badge" style="--c:#FF9900">JSQ–33</span>
-        <span class="badge" style="--c:#4D92FB">HOB–33</span>
-        <span class="badge" style="--c:#65C100">HOB–WTC</span>
+        <button class="badge" data-line="NWK-WTC" style="--c:#D93A30" title="Show only NWK–WTC">NWK–WTC</button>
+        <button class="badge" data-line="JSQ-33" style="--c:#FF9900" title="Show only JSQ–33">JSQ–33</button>
+        <button class="badge" data-line="HOB-33" style="--c:#4D92FB" title="Show only HOB–33">HOB–33</button>
+        <button class="badge" data-line="HOB-WTC" style="--c:#65C100" title="Show only HOB–WTC">HOB–WTC</button>
         <span class="foot-note">Live projections • <a href="data/realtime.json" target="_blank">raw JSON</a></span>
       </div>
     </section>
