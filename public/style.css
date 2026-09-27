@@ -161,18 +161,18 @@ button:hover{border-color:var(--amber)}
   .auto{font-size:11px}
   .board-signal{font-size:11px;padding:7px 9px;margin-left:auto}
   .board-meta{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:6px 0 8px}
-  .flap-board{padding:7px;gap:7px}
+  .flap-board{padding:6px;gap:6px}
   /* compact row: countdown | destination | chip on ONE line */
-  .row{grid-template-columns:auto 1fr auto;gap:10px;padding:10px;align-items:center}
+  .row{grid-template-columns:auto 1fr auto;gap:8px;padding:8px;align-items:center}
   .status{text-align:right}
-  .flip{font-size:22px;width:.68em}
-  .colon{font-size:18px}
-  .row-status{font-size:11px;margin-top:4px}
-  .dest{gap:2.5px}
-  .tile{font-size:14px;min-width:.9em;padding:.2em .03em}
-  .tile.space{min-width:.32em}
-  .row-sub{font-size:10.5px;margin-top:5px;letter-spacing:.08em}
-  .line-chip{font-size:10.5px;padding:2px 6px}
+  .flip{font-size:19px;width:.68em}
+  .colon{font-size:16px}
+  .row-status{font-size:10px;margin-top:4px}
+  .dest{gap:2px}
+  .tile{font-size:12px;min-width:.9em;padding:.18em .02em}
+  .tile.space{min-width:.3em}
+  .row-sub{font-size:9.5px;margin-top:4px;letter-spacing:.08em}
+  .line-chip{font-size:9.5px;padding:1px 5px}
   .board-foot{gap:6px;font-size:10px}
   .badge{font-size:10px;padding:1px 6px}
   .foot-note{font-size:10px}
