@@ -14,7 +14,7 @@
       <div class="head-left">
         <div class="path-roundel">PATH</div>
         <div>
-          <h1>New Jersey Departures</h1>
+          <h1>PATH Departures</h1>
           <p class="sub">Port Authority Trans-Hudson • Live board</p>
         </div>
       </div>
@@ -30,13 +30,23 @@
         <div class="board-station">
           <label for="stationSelect">STATION</label>
           <select id="stationSelect">
-            <option value="NWK">NEWARK</option>
-            <option value="HAR">HARRISON</option>
-            <option value="JSQ" selected>JOURNAL SQUARE</option>
-            <option value="GRV">GROVE STREET</option>
-            <option value="EXP">EXCHANGE PLACE</option>
-            <option value="NEW">NEWPORT</option>
-            <option value="HOB">HOBOKEN</option>
+            <optgroup label="New Jersey">
+              <option value="NWK">NEWARK</option>
+              <option value="HAR">HARRISON</option>
+              <option value="JSQ" selected>JOURNAL SQUARE</option>
+              <option value="GRV">GROVE STREET</option>
+              <option value="EXP">EXCHANGE PLACE</option>
+              <option value="NEW">NEWPORT</option>
+              <option value="HOB">HOBOKEN</option>
+            </optgroup>
+            <optgroup label="New York">
+              <option value="WTC">WORLD TRADE CENTER</option>
+              <option value="CHR">CHRISTOPHER ST</option>
+              <option value="09S">9TH STREET</option>
+              <option value="14S">14TH STREET</option>
+              <option value="23S">23RD STREET</option>
+              <option value="33S">33RD STREET</option>
+            </optgroup>
           </select>
         </div>
         <div class="board-actions">

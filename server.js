@@ -22,6 +22,12 @@ const NJ_STATIONS = {
   NEW: { code: 'NEW', name: 'Newport', full: 'Newport (Jersey City)' },
   EXP: { code: 'EXP', name: 'Exchange Place', full: 'Exchange Place (Jersey City)' },
   HOB: { code: 'HOB', name: 'Hoboken', full: 'Hoboken' },
+  WTC: { code: 'WTC', name: 'World Trade Center', full: 'World Trade Center (New York)' },
+  CHR: { code: 'CHR', name: 'Christopher St', full: 'Christopher Street (New York)' },
+  '09S': { code: '09S', name: '9th Street', full: '9th Street (New York)' },
+  '14S': { code: '14S', name: '14th Street', full: '14th Street (New York)' },
+  '23S': { code: '23S', name: '23rd Street', full: '23rd Street (New York)' },
+  '33S': { code: '33S', name: '33rd Street', full: '33rd Street (New York)' },
 };
 
 // Map lineColor to human route info
