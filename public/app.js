@@ -83,10 +83,20 @@ function flipString(sec) {
   const m = Math.floor(s / 60), r = s % 60;
   return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
 }
-function statusFor(sec, arrivalMsg) {
+function statusFor(sec) {
   if (sec <= 30) return { cls: 'due', label: 'BOARDING' };
   if (sec < 120) return { cls: 'approach', label: 'APPROACHING' };
-  return { cls: '', label: arrivalMsg.toUpperCase() };
+  return { cls: '', label: '' }; // normal: countdown flips say it all, no duplicate text
+}
+
+/* Shorten long headsigns so tile rows never wrap */
+function shortDest(text) {
+  return text.toUpperCase()
+    .replace('STREET', 'ST')
+    .replace('VIA HOBOKEN', 'VIA HOB')
+    .replace('JOURNAL SQUARE', 'JOURNAL SQ')
+    .replace('WORLD TRADE CENTER', 'WORLD TRADE')
+    .slice(0, 20);
 }
 
 /* ---------- board render ---------- */
@@ -107,16 +117,17 @@ function buildBoard(data) {
   }
   for (const m of trains.slice(0, 10)) {
     const sec = remainingSec(m);
-    const st = statusFor(sec, m.arrivalTimeMessage);
+    const st = statusFor(sec);
     const row = document.createElement('div');
     row.className = `row ${st.cls}`;
     const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
+    // One countdown (flips), one destination, one sub-line. No duplicates.
     row.innerHTML = `
-      <div><div class="row-dir">${dirTag}</div><div class="flips"></div><div class="row-status">${st.label}</div></div>
-      <div><div class="dest"></div><div class="row-sub">TO ${m.target} • ${m.line.name.toUpperCase()}</div></div>
-      <div class="status">${m.arrivalTimeMessage.toUpperCase()}<small>LAST UPDATE ${new Date(m.lastUpdated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</small><br><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
+      <div><div class="flips"></div><div class="row-status">${st.label}</div></div>
+      <div><div class="dest"></div><div class="row-sub">${dirTag} • ${m.line.short}</div></div>
+      <div class="status"><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
     renderFlips(row.querySelector('.flips'), flipString(sec));
-    renderTiles(row.querySelector('.dest'), m.headSign);
+    renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
     scheduleEl.appendChild(row);
     rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), row, msg: m });
   }
@@ -128,10 +139,13 @@ setInterval(() => {
     const sec = remainingSec(r.msg);
     if (sec <= -120) { r.row.style.display = 'none'; continue; } // departed since render
     renderFlips(r.flipsEl, flipString(sec));
-    const st = statusFor(sec, r.msg.arrivalTimeMessage);
+    const st = statusFor(sec);
     r.row.classList.toggle('approach', st.cls === 'approach');
     r.row.classList.toggle('due', st.cls === 'due');
-    if (r.statusEl.textContent !== st.label) r.statusEl.textContent = st.label;
+    if (r.statusEl.textContent !== st.label) {
+      r.statusEl.textContent = st.label;
+      r.statusEl.classList.toggle('hidden', !st.label);
+    }
   }
 }, 1000);
 
@@ -208,9 +222,9 @@ async function loadStation(code) {
     const data = await fetchStation(normalized);
     buildBoard(data);
     const lastUpd = data.lastUpdated
-      ? new Date(data.lastUpdated).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })
+      ? new Date(data.lastUpdated).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
       : 'now';
-    metaLine.textContent = `${STATION_NAMES[normalized]} BOARD • SYNCED ${lastUpd} • ${data.fetchedVia?.toUpperCase()} • AUTO ${autoRefresh.checked ? 'ON 15s' : 'OFF'}`;
+    metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
     setStatus('', 'LIVE');
   } catch (e) {
     console.error(e);
