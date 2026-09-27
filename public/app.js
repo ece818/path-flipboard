@@ -343,6 +343,7 @@ document.addEventListener('fullscreenchange', () => {
   fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
 });
 fsBtn.addEventListener('click', toggleTheater);
+document.getElementById('exitTheater').addEventListener('click', toggleTheater);
 clearFilterBtn.addEventListener('click', clearFilter);
 document.querySelectorAll('.badge').forEach(b => {
   b.addEventListener('click', () => setLineFilter(b.dataset.line));
