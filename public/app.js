@@ -6,6 +6,7 @@ const statusPill = document.getElementById('statusPill');
 const statusText = document.getElementById('statusText');
 const alertBox = document.getElementById('alertBox');
 const refreshBtn = document.getElementById('refreshBtn');
+const fsBtn = document.getElementById('fsBtn');
 const autoRefresh = document.getElementById('autoRefresh');
 const clockEl = document.getElementById('stationClock');
 const clockDate = document.getElementById('clockDate');
@@ -323,6 +324,25 @@ stationSelect.addEventListener('change', () => {
 });
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
 autoRefresh.addEventListener('change', () => { localStorage.setItem('path:autoRefresh', autoRefresh.checked ? '1' : '0'); scheduleAuto(); });
+/* Fullscreen focus mode — just the flipboards */
+async function toggleTheater() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    // Fullscreen API unavailable (e.g. iframe) — fall back to CSS-only focus
+    const on = document.body.classList.toggle('theater');
+    fsBtn.textContent = on ? '✕' : '⛶';
+    fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const on = !!document.fullscreenElement;
+  document.body.classList.toggle('theater', on);
+  fsBtn.textContent = on ? '✕' : '⛶';
+  fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
+});
+fsBtn.addEventListener('click', toggleTheater);
 clearFilterBtn.addEventListener('click', clearFilter);
 document.querySelectorAll('.badge').forEach(b => {
   b.addEventListener('click', () => setLineFilter(b.dataset.line));

@@ -157,6 +157,19 @@ button:hover{border-color:var(--amber)}
 .empty.tappable{cursor:pointer}
 .empty.tappable:hover{color:var(--amber)}
 
+/* theater / focus mode — just the flipboards */
+body.theater{background:#000}
+body.theater .station-shell{max-width:none;padding:8px}
+body.theater .station-head,
+body.theater .board-topbar,
+body.theater .board-meta,
+body.theater .filter-bar,
+body.theater .board-head-row,
+body.theater .board-foot,
+body.theater .fallback{display:none}
+body.theater .board-frame{padding:8px;border-radius:8px}
+body.theater .flap-board{gap:8px}
+
 @media (max-width:700px){
   .board-head-row{display:none}
   .station-shell{padding:16px 10px 40px}
