@@ -314,24 +314,35 @@ async function fetchWithTimeout(url, ms = 6000) {
 async function fetchLiveRaw() {
   const url = `${PANYNJ_URL}?timeStamp=${Date.now()}`;
   const attempts = [
-    url, // direct — works if PANYNJ ever sends CORS headers
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
+    ['direct', () => fetchWithTimeout(url)],
+    ['allorigins-raw', () => fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)],
+    ['allorigins-get', async () => {
+      const w = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      const inner = typeof w.contents === 'string' ? JSON.parse(w.contents) : w.contents;
+      if (!Array.isArray(inner.results)) throw new Error('unexpected payload shape');
+      return inner;
+    }],
+    ['isomorphic-git', () => fetchWithTimeout(`https://cors.isomorphic-git.org/${url}`)],
+    ['cors-workers', () => fetchWithTimeout(`https://test.cors.workers.dev/?${url}`)],
+    ['codetabs', () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`)],
+    ['cors.lol', () => fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(url)}`)],
   ];
-  let lastErr = null;
-  for (const u of attempts) {
+  const errors = [];
+  for (const [name, run] of attempts) {
     try {
-      const j = await fetchWithTimeout(u);
+      const j = await run();
       if (Array.isArray(j.results)) return j;
       throw new Error('unexpected payload shape');
     } catch (e) {
-      lastErr = e;
+      errors.push(`${name}: ${e?.name === 'AbortError' ? 'timeout' : (e?.message || e)}`);
     }
   }
-  throw lastErr || new Error('live fetch failed');
+  const err = new Error('live fetch failed');
+  err.details = errors;
+  throw err;
 }
 let lastLiveFail = 0;
+let lastLiveErrors = [];
 function setStatus(state, text) {
   statusPill.className = 'board-signal ' + state;
   statusText.textContent = text;
@@ -351,9 +362,12 @@ async function loadStation(code) {
       try {
         renderData(await loadLive(normalized), normalized);
         lastLiveFail = 0;
+        lastLiveErrors = [];
       } catch (e) {
         lastLiveFail = Date.now();
-        console.warn('live upgrade failed:', e?.message || e);
+        lastLiveErrors = e?.details || [e?.message || String(e)];
+        console.warn('live upgrade failed:', lastLiveErrors.join(' | '));
+        if (isStale) alertBox.dataset.diag = lastLiveErrors.join(' | ');
       }
     }
   } catch (e) {
@@ -379,6 +393,9 @@ function renderData(data, normalized) {
     alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Check connection; retrying automatically.`;
     alertBox.classList.remove('hidden');
   } else {
+    delete alertBox.dataset.diag;
+    delete alertBox.dataset.showDiag;
+    delete alertBox.dataset.short;
     alertBox.classList.add('hidden');
     setStatus('', 'LIVE');
   }
@@ -420,6 +437,19 @@ document.addEventListener('fullscreenchange', () => {
 fsBtn.addEventListener('click', toggleTheater);
 document.getElementById('exitTheater').addEventListener('click', toggleTheater);
 clearFilterBtn.addEventListener('click', clearFilter);
+alertBox.style.cursor = 'pointer';
+alertBox.addEventListener('click', () => {
+  const d = alertBox.dataset.diag;
+  if (!d) return;
+  if (alertBox.dataset.showDiag) {
+    delete alertBox.dataset.showDiag;
+    alertBox.textContent = alertBox.dataset.short || alertBox.textContent;
+  } else {
+    alertBox.dataset.showDiag = '1';
+    alertBox.dataset.short = alertBox.textContent;
+    alertBox.textContent = 'DIAG: ' + d + ' — tap to hide';
+  }
+});
 document.querySelectorAll('.badge').forEach(b => {
   b.addEventListener('click', () => setLineFilter(b.dataset.line));
 });
