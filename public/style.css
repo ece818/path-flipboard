@@ -36,7 +36,22 @@ body{
 .station-head .sub{margin:4px 0 0;color:var(--muted);font-size:13px;letter-spacing:.18em}
 .head-clock{text-align:right}
 .clock-label{font-size:12px;letter-spacing:.25em;color:var(--muted);margin-bottom:6px}
+.clock-row{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .clock-flips{display:flex;gap:4px;justify-content:flex-end}
+.clock-ampm{font-size:13px;letter-spacing:.15em;color:var(--amber);border:1px solid #4a4a52;
+  border-radius:4px;padding:4px 7px;background:#000;min-width:2.6em;text-align:center}
+.clock-ampm.hidden{display:none}
+.clock-settings{position:relative}
+.clock-settings button{font-size:15px;padding:6px 10px}
+.settings-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:150px;
+  background:#000;border:1px solid #4a4a52;border-radius:8px;padding:10px 12px;text-align:left;
+  box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.settings-menu.hidden{display:none}
+.settings-title{font-size:11px;letter-spacing:.25em;color:var(--muted);margin-bottom:8px}
+.settings-menu label{display:flex;gap:8px;align-items:center;font-size:13px;letter-spacing:.08em;
+  color:var(--text);padding:5px 2px;cursor:pointer;white-space:nowrap}
+.settings-menu label:hover{color:var(--amber)}
+.settings-menu input{accent-color:var(--amber)}
 
 /* board frame */
 .board-frame{
@@ -184,6 +199,8 @@ body.theater .exit-theater{display:block}
   .station-head .sub{font-size:11px;letter-spacing:.12em}
   .head-clock{text-align:left}
   .clock-label{font-size:10px;margin-bottom:4px}
+  .clock-row{justify-content:flex-start}
+  .clock-ampm{font-size:11px;padding:3px 6px;min-width:2.4em}
   .clock-flips{gap:2px;justify-content:flex-start}
   .clock-flips .flip{font-size:20px}
   .clock-flips .colon{font-size:16px}

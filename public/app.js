@@ -233,12 +233,61 @@ setInterval(() => {
   }
 }, 1000);
 
-/* ---------- station clock ---------- */
+/* ---------- station clock (12/24h setting) ---------- */
+const clockAmpm = document.getElementById('clockAmpm');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsMenu = document.getElementById('settingsMenu');
+let clockFormat = '12';
+try {
+  clockFormat = localStorage.getItem('path:clockFormat') || '12';
+  if (clockFormat !== '12' && clockFormat !== '24') clockFormat = '12';
+} catch { clockFormat = '12'; }
+function syncClockFormatUI() {
+  document.querySelectorAll('input[name="clockFormat"]').forEach(r => {
+    r.checked = r.value === clockFormat;
+  });
+  if (clockAmpm) clockAmpm.classList.toggle('hidden', clockFormat !== '12');
+}
 function tickClock() {
   const now = new Date();
   const p = n => String(n).padStart(2, '0');
-  renderFlips(clockEl, `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`);
+  let h = now.getHours();
+  if (clockFormat === '12') {
+    const ampm = h < 12 ? 'AM' : 'PM';
+    h = h % 12 || 12;
+    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}:${p(now.getSeconds())}`);
+    if (clockAmpm) {
+      clockAmpm.textContent = ampm;
+      clockAmpm.classList.remove('hidden');
+    }
+  } else {
+    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}:${p(now.getSeconds())}`);
+    if (clockAmpm) clockAmpm.classList.add('hidden');
+  }
   clockDate.textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }).toUpperCase() + ' • ET';
+}
+if (settingsBtn && settingsMenu) {
+  syncClockFormatUI();
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsMenu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.classList.contains('hidden') && !e.target.closest('.clock-settings')) {
+      settingsMenu.classList.add('hidden');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') settingsMenu.classList.add('hidden');
+  });
+  settingsMenu.querySelectorAll('input[name="clockFormat"]').forEach(r => {
+    r.addEventListener('change', () => {
+      clockFormat = r.value;
+      try { localStorage.setItem('path:clockFormat', clockFormat); } catch {}
+      syncClockFormatUI();
+      tickClock();
+    });
+  });
 }
 setInterval(tickClock, 1000);
 tickClock();
