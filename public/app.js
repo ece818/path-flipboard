@@ -349,8 +349,6 @@ async function fetchLiveRaw() {
       if (!Array.isArray(inner.results)) throw new Error('unexpected payload shape');
       return inner;
     }],
-    ['codetabs', () => fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`)],
-    ['cors.lol', () => fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(url)}`)],
   ];
   const errors = [];
   for (const [name, run] of attempts) {

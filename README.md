@@ -25,12 +25,15 @@ GitHub Pages serves static files only, so the board reads a snapshot at
    (`.github/workflows/pages.yml`) fetches fresh PANYNJ data, then publishes
    `public/` to `https://<you>.github.io/<repo>/`.
 4. Done — share the link. In the browser the board paints instantly from the
-   snapshot, then upgrades to true live data via CORS proxies on every 15s
+   snapshot, then upgrades to true live data (via a CORS proxy) on every 15s
    refresh; countdowns keep ticking client-side between refreshes, and
    departed trains auto-hide. If live refresh fails and the snapshot is over
    10 min old, rows honestly show `STALE` instead of fake `00 BOARDING`.
+   Note the scheduled refresh workflow gets throttled by GitHub to roughly
+   every few hours rather than every 5 min — the live upgrade is what keeps
+   the board fresh between deploys.
 
-## Truly live data (recommended, 5 min, free)
+## Truly live data without third-party proxies (optional, 5 min, free)
 
 Public CORS proxies are flaky, so for reliable auto-updates deploy your own
 proxy (Cloudflare free tier, ~100k req/day):
