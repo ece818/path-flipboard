@@ -361,7 +361,7 @@ async function loadLive(code) {
     const c = new AbortController();
     const t = setTimeout(() => c.abort(), 4000);
     try {
-      const res = await fetch(`/api/realtime?station=${encodeURIComponent(code)}`, { signal: c.signal });
+      const res = await fetch(`api/realtime?station=${encodeURIComponent(code)}`, { signal: c.signal });
       if (res.ok) {
         const data = await res.json();
         if (!data.error) return { ...data, fetchedVia: 'live proxy', live: true, ageMin: 0 };
