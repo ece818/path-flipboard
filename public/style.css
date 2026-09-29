@@ -190,10 +190,18 @@ body.theater .station-head{justify-content:center;margin-bottom:8px}
 body.theater .head-clock{text-align:center}
 body.theater .clock-label{text-align:center}
 body.theater .clock-row{justify-content:center}
-body.theater .clock-flips .flip{font-size:40px}
-body.theater .clock-flips .colon{font-size:34px}
-body.theater .board-frame{padding:8px;border-radius:8px}
-body.theater .flap-board{gap:8px}
+body.theater .clock-flips .flip{font-size:clamp(28px,4.5vmin,64px)}
+body.theater .clock-flips .colon{font-size:clamp(24px,3.8vmin,54px)}
+/* fill the viewport: shell is a full-height column, rows share it equally */
+body.theater .station-shell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+body.theater .board-frame{flex:1;display:flex;flex-direction:column;padding:12px;border-radius:8px}
+body.theater .flap-board{flex:1;gap:10px;grid-auto-rows:1fr}
+body.theater .row{grid-template-columns:auto minmax(0,1fr) auto;padding:10px 16px}
+/* scale board text with the display (vmin) so wall screens look intentional */
+body.theater .flip{font-size:clamp(20px,4.5vmin,64px)}
+body.theater .colon{font-size:clamp(18px,3.8vmin,54px)}
+body.theater .tile{font-size:clamp(13px,2.4vmin,30px)}
+body.theater .row-status{font-size:clamp(10px,1.6vmin,16px)}
 /* small exit button — only visible in theater mode, docked directly below the board */
 .exit-theater{display:none;margin:10px auto 0;width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;
   background:rgba(0,0,0,.65);color:var(--muted);border:1px solid #3a3a40;cursor:pointer}
