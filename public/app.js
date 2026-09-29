@@ -208,6 +208,30 @@ function visibleKey(m) {
   return `${m.dir}|${m.headSign.toUpperCase()}|${m.line.short}|${depMin}`;
 }
 
+/* Theater strips must reach the countdown on every viewport. The route block
+   is pinned right by CSS (space-between); when the strip is too WIDE for the
+   middle column (tablet / rotated-phone widths), shrink the tile font until
+   it fits. Measured, not guessed — re-run on rebuild, resize, theater toggle. */
+function fitTileStrips() {
+  if (!document.body.classList.contains('theater') || !rowRefs.length) return;
+  const board = scheduleEl;
+  board.style.removeProperty('--tile-fit');
+  const cd = rowRefs.map(r => r.row.querySelector('.col-dest')).find(el => el && el.clientWidth > 0);
+  if (!cd) return;
+  const avail = cd.clientWidth;
+  const cur = () => {
+    const t = cd.querySelector('.tile');
+    return (t && parseFloat(getComputedStyle(t).fontSize)) || 16;
+  };
+  for (let pass = 0; pass < 3; pass++) {
+    const content = cd.scrollWidth;
+    if (content <= avail + 1) return;
+    const fit = Math.max(8, cur() * (avail / content));
+    board.style.setProperty('--tile-fit', fit.toFixed(1) + 'px');
+    if (fit <= 8) return;
+  }
+}
+
 function buildBoard(data, opts = {}) {
   lastData = data;
   const force = !!opts.force;
@@ -277,6 +301,7 @@ function buildBoard(data, opts = {}) {
     scheduleEl.appendChild(row);
     rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), row, msg: m });
   }
+  fitTileStrips();
 }
 
 /* Tick every second: flip only changed digits, update status text */
@@ -626,6 +651,7 @@ async function toggleTheater() {
     const on = document.body.classList.toggle('theater');
     fsBtn.textContent = on ? '✕' : '⛶';
     fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
+    fitTileStrips();
   }
 }
 document.addEventListener('fullscreenchange', () => {
@@ -633,6 +659,13 @@ document.addEventListener('fullscreenchange', () => {
   document.body.classList.toggle('theater', on);
   fsBtn.textContent = on ? '✕' : '⛶';
   fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
+  fitTileStrips();
+});
+// rotate / resize while fullscreen: strips must re-fit the new width
+let fitTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(fitTileStrips, 150);
 });
 fsBtn.addEventListener('click', toggleTheater);
 document.getElementById('exitTheater').addEventListener('click', toggleTheater);
