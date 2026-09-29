@@ -73,7 +73,7 @@ function renderFlips(container, str) {
 /* ---------- destination letter tiles ---------- */
 function renderTiles(container, text) {
   container.innerHTML = '';
-  const upper = text.toUpperCase().slice(0, 26);
+  const upper = text.toUpperCase().slice(0, 64);
   [...upper].forEach((ch, i) => {
     const t = document.createElement('span');
     t.className = 'tile' + (ch === ' ' ? ' space' : '');
@@ -113,6 +113,13 @@ function shortDest(text) {
     .replace('JOURNAL SQUARE', 'JOURNAL SQ')
     .replace('WORLD TRADE CENTER', 'WORLD TRADE')
     .slice(0, 20);
+}
+
+/* Route strip shown as tiles right of the destination: line first (never
+   clipped) then direction. Clicking it filters to that line. */
+function routeStr(m) {
+  const dir = m.dir === 'ToNY' ? 'NEW YORK' : m.dir === 'ToNJ' ? 'NEW JERSEY' : m.dir.toUpperCase();
+  return `${m.line.short} → ${dir}`;
 }
 
 /* ---------- departure wall-clock time (right column) ---------- */
@@ -239,30 +246,34 @@ function buildBoard(data, opts = {}) {
   lastVisibleKeys = keys;
   scheduleEl.innerHTML = '';
   rowRefs = [];
+  // Equal-length tile strips: pad destinations and routes to the longest
+  // visible one, so trailing positions render as blank flaps on every row.
+  const maxDest = Math.max(...visible.map(m => shortDest(m.headSign).length));
+  const maxRoute = Math.max(...visible.map(m => routeStr(m).length));
   for (const m of visible) {
     const sec = remainingSec(m);
     const st = statusFor(sec);
     const row = document.createElement('div');
     row.className = `row ${st.cls}`;
-    const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
-    // Left: departure wall-clock flips. Middle: destination + direction/line
-    // (line stays tappable for filtering). Right: countdown flips + status.
+    // Left: departure wall-clock flips. Middle: destination tiles + route
+    // tiles (same size). Right: countdown flips + status.
     row.innerHTML = `
       <div class="col-time"><div class="departs"></div></div>
-      <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line" style="--c:${m.line.color}">${m.line.short}</span></div></div>
+      <div class="col-dest"><div class="dest"></div><div class="route" style="--c:${m.line.color}"></div></div>
       <div class="status col-due"><div class="flips"></div><div class="row-status">${st.label}</div></div>`;
     renderFlips(row.querySelector('.departs'), departText(departDate(m)));
     renderFlips(row.querySelector('.flips'), flipString(sec));
-    renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
-    // tap destination → filter to that destination; tap line text → filter to that line
+    renderTiles(row.querySelector('.dest'), shortDest(m.headSign).padEnd(maxDest));
+    renderTiles(row.querySelector('.route'), routeStr(m).padEnd(maxRoute));
+    // tap destination → filter to that destination; tap route → filter to that line
     const destEl = row.querySelector('.dest');
     destEl.title = `Show only ${m.headSign}`;
     if (destFilter === m.headSign.toUpperCase()) destEl.classList.add('active');
     destEl.addEventListener('click', () => setDestFilter(m.headSign.toUpperCase()));
-    const subLineEl = row.querySelector('.sub-line');
-    subLineEl.title = `Show only ${m.line.short}`;
-    if (lineFilter && lineMatches(m, lineFilter)) subLineEl.classList.add('active');
-    subLineEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
+    const routeEl = row.querySelector('.route');
+    routeEl.title = `Show only ${m.line.short}`;
+    if (lineFilter && lineMatches(m, lineFilter)) routeEl.classList.add('active');
+    routeEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
     scheduleEl.appendChild(row);
     rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), row, msg: m });
   }
