@@ -196,11 +196,14 @@ body.theater .clock-flips .colon{font-size:clamp(24px,3.8vmin,54px)}
 body.theater .station-shell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 body.theater .board-frame{flex:1;display:flex;flex-direction:column;padding:12px;border-radius:8px}
 body.theater .flap-board{flex:1;gap:10px;grid-auto-rows:1fr}
-body.theater .row{grid-template-columns:auto minmax(0,1fr) auto;padding:10px 16px}
-/* scale board text with the display (vmin) so wall screens look intentional */
-body.theater .flip{font-size:clamp(20px,4.5vmin,64px)}
-body.theater .colon{font-size:clamp(18px,3.8vmin,54px)}
-body.theater .tile{font-size:clamp(13px,2.4vmin,30px)}
+body.theater .row{grid-template-columns:auto minmax(0,1fr) auto;padding:10px 16px;container-type:size}
+/* flank digits fill the row height like a real split-flap board: cqh tracks
+   row height (6 rows or 10 rows both fill); px floor + vmin/vw caps bound it
+   (vw cap keeps narrow portrait phones from crushing the middle column) */
+body.theater .flip{font-size:clamp(20px,4.5vmin,64px);font-size:max(20px,min(58cqh,11vmin,5vw))}
+body.theater .colon{font-size:clamp(18px,3.8vmin,54px);font-size:max(18px,min(48cqh,9vmin,4.5vw))}
+body.theater .flips,body.theater .departs{gap:.5vmin}
+body.theater .tile{font-size:clamp(13px,3vmin,40px)}
 body.theater .row-status{font-size:clamp(10px,1.6vmin,16px)}
 /* small exit button — only visible in theater mode, docked directly below the board */
 .exit-theater{display:none;margin:10px auto 0;width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;
