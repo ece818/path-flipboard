@@ -24,11 +24,14 @@
           <div class="clock-flips" id="stationClock" aria-label="current time"></div>
           <span class="clock-ampm" id="clockAmpm">AM</span>
           <div class="clock-settings">
-            <button id="settingsBtn" title="Settings — time format">⚙</button>
+            <button id="settingsBtn" title="Settings — time format, dark mode">⚙</button>
             <div id="settingsMenu" class="settings-menu hidden" role="menu">
               <div class="settings-title">TIME FORMAT</div>
               <label><input type="radio" name="clockFormat" value="12"> 12-hour</label>
               <label><input type="radio" name="clockFormat" value="24"> 24-hour</label>
+              <div class="settings-divider"></div>
+              <div class="settings-title">APPEARANCE</div>
+              <label><input type="checkbox" id="darkModeToggle" checked> Dark mode</label>
             </div>
           </div>
         </div>

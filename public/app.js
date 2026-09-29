@@ -233,6 +233,27 @@ setInterval(() => {
   }
 }, 1000);
 
+/* ---------- dark mode (settings dropdown) ---------- */
+const darkModeToggle = document.getElementById('darkModeToggle');
+let darkMode = true;
+try {
+  const savedTheme = localStorage.getItem('path:darkMode');
+  darkMode = savedTheme === null ? true : savedTheme === '1';
+} catch { darkMode = true; }
+function applyDarkMode() {
+  document.body.classList.toggle('light', !darkMode);
+  if (darkModeToggle) darkModeToggle.checked = darkMode;
+}
+function setDarkMode(on) {
+  darkMode = !!on;
+  try { localStorage.setItem('path:darkMode', darkMode ? '1' : '0'); } catch {}
+  applyDarkMode();
+}
+applyDarkMode();
+if (darkModeToggle) {
+  darkModeToggle.addEventListener('change', () => setDarkMode(darkModeToggle.checked));
+}
+
 /* ---------- station clock (12/24h setting) ---------- */
 const clockAmpm = document.getElementById('clockAmpm');
 const settingsBtn = document.getElementById('settingsBtn');
