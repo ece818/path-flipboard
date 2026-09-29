@@ -119,6 +119,12 @@ button:hover{border-color:var(--amber)}
 .row.due .row-status{color:var(--green)}
 .status{text-align:right}
 .status small{display:block;color:var(--muted);font-size:11px;letter-spacing:.2em;margin-top:6px}
+.col-depart{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:2px}
+.depart-time{font-size:clamp(15px,2.4vw,21px);letter-spacing:.06em;color:var(--text);white-space:nowrap;
+  text-shadow:0 0 10px rgba(245,241,230,.2)}
+.sub-line{color:var(--c,var(--muted));cursor:pointer;border-radius:3px;padding:0 3px}
+.sub-line:hover{filter:brightness(1.35);outline:1px solid var(--c,var(--muted));outline-offset:1px}
+.sub-line.active{background:var(--c);color:#000;font-weight:700;padding:0 5px}
 .line-chip{display:inline-block;font-size:11px;letter-spacing:.1em;border:1px solid var(--c);color:var(--c);border-radius:4px;padding:2px 6px;white-space:nowrap;
   background:transparent;font-family:inherit;cursor:pointer}
 .line-chip:hover{filter:brightness(1.4)}
@@ -229,9 +235,9 @@ body.theater .exit-theater{display:block}
   .tile{font-size:12px;min-width:.8em;padding:.18em .02em;flex:0 1 auto}
   .tile.space{min-width:.3em}
   .row-sub{font-size:9.5px;margin-top:4px;letter-spacing:.08em}
-  /* chip already shows the line — hide duplicate copy in sub-line on narrow screens */
-  .row-sub .sub-line,.row-sub .sub-sep{display:none}
-  .line-chip{font-size:9px;padding:1px 5px;max-width:92px;overflow:hidden;text-overflow:ellipsis}
+  /* line stays visible in the sub-line on mobile — the right column is now departure time */
+  .depart-time{font-size:15px;letter-spacing:.04em}
+  .col-depart{min-width:76px}
   .board-foot{gap:6px;font-size:10px}
   .badge{font-size:10px;padding:1px 6px}
   .foot-note{font-size:10px;margin-left:0;flex-basis:100%}
@@ -277,6 +283,7 @@ body.light .flip span{background:linear-gradient(180deg,#ffffff 49.4%,#d8d2c4 49
 body.light .colon{color:var(--amber)}
 body.light .tile{background:linear-gradient(180deg,#ffffff 49.2%,#d8d2c4 49.2% 50.8%,#f0ebdd 50.8%);color:#1c1c1f;text-shadow:none;border:1px solid #e0dccf}
 body.light .tile.space{background:transparent;border:none;box-shadow:none}
+body.light .depart-time{text-shadow:none}
 body.light .filter-bar{background:#fdf6e0;border-color:#d3b34c;color:var(--amber)}
 body.light .filter-bar button{background:transparent;border-color:#d3b34c;color:var(--amber);box-shadow:none}
 body.light .timetable th,body.light .timetable td{border-color:#c9c2b0}

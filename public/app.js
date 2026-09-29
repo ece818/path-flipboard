@@ -115,6 +115,27 @@ function shortDest(text) {
     .slice(0, 20);
 }
 
+/* ---------- departure wall-clock time (right column) ---------- */
+function departDate(m) {
+  const base = new Date(m.lastUpdated).getTime();
+  const fallback = Date.now() + remainingSec(m) * 1000;
+  const t = Number.isFinite(base) ? base + m.secondsToArrivalNum * 1000 : fallback;
+  return new Date(t);
+}
+function formatDepart(d) {
+  try {
+    if (clockFormat === '24') {
+      return d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    return d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+  } catch {
+    const p = n => String(n).padStart(2, '0');
+    if (clockFormat === '24') return `${p(d.getHours())}:${p(d.getMinutes())}`;
+    const h12 = d.getHours() % 12 || 12;
+    return `${h12}:${p(d.getMinutes())} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
+  }
+}
+
 /* ---------- board render ---------- */
 let trains = [];   // flat sorted list
 let rowRefs = [];  // [{flipsEl, statusEl, msg}]
@@ -155,25 +176,32 @@ function setLineFilter(value) {
   lineFilter = (lineFilter === value) ? null : value;
   if (lineFilter) destFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData);
+  if (lastData) buildBoard(lastData, { force: true });
 }
 function setDestFilter(value) {
   destFilter = (destFilter === value) ? null : value;
   if (destFilter) lineFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData);
+  if (lastData) buildBoard(lastData, { force: true });
 }
 function clearFilter() {
   lineFilter = null;
   destFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData);
+  if (lastData) buildBoard(lastData, { force: true });
 }
 
-function buildBoard(data) {
+let lastVisibleKeys = null;
+function visibleKey(m) {
+  // Stable identity per train: same physical departure even as countdown ticks.
+  // Round departure to the minute so a 15s refresh doesn't look like a new train.
+  const depMin = Math.round(departDate(m).getTime() / 60000);
+  return `${m.dir}|${m.headSign.toUpperCase()}|${m.line.short}|${depMin}`;
+}
+
+function buildBoard(data, opts = {}) {
   lastData = data;
-  scheduleEl.innerHTML = '';
-  rowRefs = [];
+  const force = !!opts.force;
   trains = data.destinations.flatMap(d => d.messages.map(m => ({ ...m, dir: d.label })));
   // Drop trains that departed a while ago (snapshot may be minutes old).
   trains = trains.filter(m => remainingSec(m) > -120);
@@ -181,39 +209,60 @@ function buildBoard(data) {
   const visible = applyFilters(trains).slice(0, 10);
 
   if (!trains.length) {
+    lastVisibleKeys = null;
     scheduleEl.innerHTML = `<div class="empty">— NO TRAINS REPORTED —</div>`;
+    rowRefs = [];
     return;
   }
   if (!visible.length) {
+    lastVisibleKeys = null;
     const label = lineFilter || destFilter || 'FILTER';
     scheduleEl.innerHTML = `<div class="empty tappable">— NO ${label} TRAINS — TAP TO CLEAR —</div>`;
     scheduleEl.querySelector('.empty').addEventListener('click', clearFilter);
+    rowRefs = [];
     return;
   }
+  // Reconciliation: same trains in same order → don't rebuild DOM (stops blink /
+  // tile animation replay on every 15s refresh). Just point rows at fresh data
+  // so countdowns stay accurate, and refresh departure times in place.
+  const keys = visible.map(visibleKey);
+  if (!force && lastVisibleKeys && keys.length === lastVisibleKeys.length && keys.every((k, i) => k === lastVisibleKeys[i]) && rowRefs.length === visible.length) {
+    visible.forEach((m, i) => {
+      const r = rowRefs[i];
+      r.msg = m;
+      const dep = formatDepart(departDate(m));
+      if (r.departEl && r.departEl.textContent !== dep) r.departEl.textContent = dep;
+    });
+    return;
+  }
+  lastVisibleKeys = keys;
+  scheduleEl.innerHTML = '';
+  rowRefs = [];
   for (const m of visible) {
     const sec = remainingSec(m);
     const st = statusFor(sec);
     const row = document.createElement('div');
     row.className = `row ${st.cls}`;
     const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
-    // One countdown (flips), one destination, one sub-line. No duplicates.
+    // Left: countdown flips. Middle: destination + direction/line (line stays
+    // tappable for filtering). Right: wall-clock departure time.
     row.innerHTML = `
       <div class="col-time"><div class="flips"></div><div class="row-status">${st.label}</div></div>
-      <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line">${m.line.short}</span></div></div>
-      <div class="status col-line"><span class="line-chip" style="--c:${m.line.color}">${m.line.short}</span></div>`;
+      <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line" style="--c:${m.line.color}">${m.line.short}</span></div></div>
+      <div class="status col-depart"><div class="depart-time">${formatDepart(departDate(m))}</div></div>`;
     renderFlips(row.querySelector('.flips'), flipString(sec));
     renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
-    // tap destination → filter to that destination; tap chip → filter to that line
+    // tap destination → filter to that destination; tap line text → filter to that line
     const destEl = row.querySelector('.dest');
     destEl.title = `Show only ${m.headSign}`;
     if (destFilter === m.headSign.toUpperCase()) destEl.classList.add('active');
     destEl.addEventListener('click', () => setDestFilter(m.headSign.toUpperCase()));
-    const chipEl = row.querySelector('.line-chip');
-    chipEl.title = `Show only ${m.line.short}`;
-    if (lineFilter && lineMatches(m, lineFilter)) chipEl.classList.add('active');
-    chipEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
+    const subLineEl = row.querySelector('.sub-line');
+    subLineEl.title = `Show only ${m.line.short}`;
+    if (lineFilter && lineMatches(m, lineFilter)) subLineEl.classList.add('active');
+    subLineEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
     scheduleEl.appendChild(row);
-    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), row, msg: m });
+    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departEl: row.querySelector('.depart-time'), row, msg: m });
   }
 }
 
@@ -307,6 +356,7 @@ if (settingsBtn && settingsMenu) {
       try { localStorage.setItem('path:clockFormat', clockFormat); } catch {}
       syncClockFormatUI();
       tickClock();
+      if (lastData) buildBoard(lastData, { force: true });
     });
   });
 }
@@ -441,16 +491,35 @@ function setStatus(state, text) {
   statusText.textContent = text;
 }
 let timer = null;
-async function loadStation(code) {
+async function loadStation(code, opts = {}) {
   if (loading) return;
+  const background = !!opts.background;
   loading = true;
   const normalized = code.toUpperCase();
-  setStatus('loading', 'SYNC');
-  alertBox.classList.add('hidden');
-  metaLine.textContent = `SYNCING ${STATION_NAMES[normalized] || normalized}…`;
+  const stationChanged = loadStation._station !== normalized;
+  const firstPaint = !lastData || stationChanged;
+  // Manual loads get immediate SYNC feedback. Background auto-refresh stays
+  // quiet until new data arrives — no SYNC flash, no meta rewrite.
+  if (!background) {
+    setStatus('loading', 'SYNC');
+    if (firstPaint) {
+      alertBox.classList.add('hidden');
+      metaLine.textContent = `SYNCING ${STATION_NAMES[normalized] || normalized}…`;
+    }
+  }
   try {
-    // fast paint from the static snapshot, then upgrade to live data in place
-    renderData(await loadSnapshot(normalized), normalized);
+    // Fast paint from the static snapshot only when there's no board yet (or
+    // the station changed). On routine auto-refresh skip it: repainting a
+    // possibly-old snapshot over a good live board is what flashed the red
+    // STALE box every 15s.
+    if (firstPaint) {
+      try {
+        renderData(await loadSnapshot(normalized), normalized);
+      } catch (e) {
+        if (!background) throw e;
+        console.warn('snapshot failed (background, keeping current board):', e?.message || e);
+      }
+    }
     if (!lastLiveFail || Date.now() - lastLiveFail > 45000) {
       try {
         renderData(await loadLive(normalized), normalized);
@@ -460,22 +529,38 @@ async function loadStation(code) {
         lastLiveFail = Date.now();
         lastLiveErrors = e?.details || [e?.message || String(e)];
         console.warn('live upgrade failed:', lastLiveErrors.join(' | '));
-        if (isStale) {
-          alertBox.dataset.diag = lastLiveErrors.join(' | ');
-          if (alertBox.dataset.showDiag) {
-            alertBox.textContent = 'DIAG: ' + alertBox.dataset.diag + ' — tap to hide';
+        if (firstPaint) {
+          // We just painted the snapshot above, so mark it stale if it is old.
+          // renderData already did that; only wire up diag details here.
+          if (isStale) {
+            alertBox.dataset.diag = lastLiveErrors.join(' | ');
+            if (alertBox.dataset.showDiag) {
+              alertBox.textContent = 'DIAG: ' + alertBox.dataset.diag + ' — tap to hide';
+            }
           }
+        } else if (!background) {
+          // Manual refresh with live down: keep the current board, surface a
+          // one-line note instead of wiping to an error state.
+          metaLine.textContent = `${metaLine.textContent} • LIVE RETRY SOON`;
         }
+        // Background refresh with live down: leave board/status/alert exactly
+        // as they are — silent retry next tick, zero flicker.
       }
     }
   } catch (e) {
     console.error(e);
-    alertBox.textContent = `SIGNAL LOST: ${e.message}. Retrying automatically.`;
-    alertBox.classList.remove('hidden');
-    setStatus('error', 'OFFLINE');
-    scheduleEl.innerHTML = `<div class="empty">— SIGNAL LOST —</div>`;
+    // Only wipe to SIGNAL LOST when there's nothing on screen yet.
+    if (firstPaint) {
+      alertBox.textContent = `SIGNAL LOST: ${e.message}. Retrying automatically.`;
+      alertBox.classList.remove('hidden');
+      setStatus('error', 'OFFLINE');
+      scheduleEl.innerHTML = `<div class="empty">— SIGNAL LOST —</div>`;
+      rowRefs = [];
+      lastVisibleKeys = null;
+    }
   } finally {
     loading = false;
+    loadStation._station = normalized;
   }
 }
 function renderData(data, normalized) {
@@ -503,7 +588,7 @@ function renderData(data, normalized) {
 }
 function scheduleAuto() {
   if (timer) clearInterval(timer);
-  if (autoRefresh.checked) timer = setInterval(() => loadStation(stationSelect.value), 15000);
+  if (autoRefresh.checked) timer = setInterval(() => loadStation(stationSelect.value, { background: true }), 15000);
 }
 
 stationSelect.addEventListener('change', () => {
@@ -513,6 +598,7 @@ stationSelect.addEventListener('change', () => {
   lineFilter = null;
   destFilter = null;
   updateFilterUI();
+  lastVisibleKeys = null;
   loadStation(stationSelect.value);
 });
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
