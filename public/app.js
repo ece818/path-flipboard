@@ -210,25 +210,41 @@ function visibleKey(m) {
 
 /* Theater strips must reach the countdown on every viewport. The route block
    is pinned right by CSS (space-between); when the strip is too WIDE for the
-   middle column (tablet / rotated-phone widths), shrink the tile font until
-   it fits. Measured, not guessed — re-run on rebuild, resize, theater toggle. */
+   middle column (tablet / rotated-phone widths), scale the WHOLE row — tiles,
+   departure digits, countdown digits — by one factor until the strip fills it.
+   Scaling digits too narrows the flanks (more room for the strip) and keeps
+   digit/tile heights proportional, so rows don't look lopsided. Measured, not
+   guessed — re-run on rebuild, resize, theater toggle. */
 function fitTileStrips() {
   if (!document.body.classList.contains('theater') || !rowRefs.length) return;
   const board = scheduleEl;
   board.style.removeProperty('--tile-fit');
+  board.style.removeProperty('--flip-fit');
+  board.style.removeProperty('--colon-fit');
   const cd = rowRefs.map(r => r.row.querySelector('.col-dest')).find(el => el && el.clientWidth > 0);
   if (!cd) return;
-  const avail = cd.clientWidth;
-  const cur = () => {
-    const t = cd.querySelector('.tile');
-    return (t && parseFloat(getComputedStyle(t).fontSize)) || 16;
-  };
-  for (let pass = 0; pass < 3; pass++) {
-    const content = cd.scrollWidth;
-    if (content <= avail + 1) return;
-    const fit = Math.max(8, cur() * (avail / content));
-    board.style.setProperty('--tile-fit', fit.toFixed(1) + 'px');
-    if (fit <= 8) return;
+  const row = cd.closest('.row');
+  const fs = el => (el && parseFloat(getComputedStyle(el).fontSize)) || 0;
+  const tile0 = fs(cd.querySelector('.tile'));
+  const flip0 = fs(row.querySelector('.departs .flip'));
+  const colon0 = fs(row.querySelector('.flips .colon'));
+  if (!tile0 || !flip0) return;
+  let avail = cd.clientWidth;
+  let content = cd.scrollWidth;
+  if (content <= avail + 1) return; // fits at design size — route already pinned right
+  let s = avail / content;
+  let prevRatio = 0;
+  for (let i = 0; i < 8; i++) {
+    board.style.setProperty('--tile-fit', (tile0 * s).toFixed(1) + 'px');
+    board.style.setProperty('--flip-fit', (flip0 * s).toFixed(1) + 'px');
+    if (colon0) board.style.setProperty('--colon-fit', (colon0 * s).toFixed(1) + 'px');
+    avail = cd.clientWidth;
+    content = cd.scrollWidth;
+    if (content <= avail && content >= avail * 0.96) return; // strip fills ~96-100%
+    const ratio = content / avail;
+    if (Math.abs(ratio - prevRatio) < 0.002) return; // font floors locked it — stop stepping
+    prevRatio = ratio;
+    s = Math.min(1, Math.max(0.15, s * (avail / content) ** 0.9));
   }
 }
 
