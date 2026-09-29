@@ -37,5 +37,5 @@ Live chain in `loadLive()`: saved Worker URL (`?live=https://…` → `localStor
   - Snapshot renders only on first paint / station change; background live failure = silent retry.
   - `buildBoard()` reconciles by departure-minute keys (`visibleKey`) and skips DOM rebuild when trains match; pass `{ force: true }` on filter, station, or clock-format changes.
 - **Times are ET**: display with `timeZone: 'America/New_York'`; departures = `new Date(lastUpdated) + secondsToArrivalNum`, formatted per `clockFormat`. Stale threshold: snapshot >10 min + live down → `STALE`.
-- **Themes + mobile**: new UI must work in dark (default) and `body.light` (CSS-var overrides) and at ≤700px. Keep the row sub-line visible on mobile (it carries the line since the right column is departure time); right column needs `min-width` for `9:21 PM` widths.
+- **Themes + mobile**: new UI must work in dark (default) and `body.light` (CSS-var overrides) and at ≤700px. Keep the row sub-line visible on mobile (it carries the line since the right column is departure time); right column needs `min-width` for `9:21 PM` widths. Departure times reuse split-flap `renderFlips()` (digits only) via `departParts()` + a muted AM/PM sub-label — hidden in 24h mode.
 - Don't commit stray assets (e.g. screenshots) or `node_modules/`; snapshot JSON is a build artifact with a fallback copy in repo.

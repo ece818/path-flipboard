@@ -122,17 +122,20 @@ function departDate(m) {
   const t = Number.isFinite(base) ? base + m.secondsToArrivalNum * 1000 : fallback;
   return new Date(t);
 }
-function formatDepart(d) {
+function departParts(d) {
+  // Split ET wall-clock time into flip digits ("09:21") + AM/PM label,
+  // so the right column reuses the same split-flap rendering as countdowns.
   try {
-    if (clockFormat === '24') {
-      return d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
-    }
-    return d.toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+    const o = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: clockFormat !== '24' })
+        .formatToParts(d).map(p => [p.type, p.value])
+    );
+    return { text: `${o.hour}:${o.minute}`, ampm: clockFormat === '24' ? '' : (o.dayPeriod || '').toUpperCase() };
   } catch {
     const p = n => String(n).padStart(2, '0');
-    if (clockFormat === '24') return `${p(d.getHours())}:${p(d.getMinutes())}`;
-    const h12 = d.getHours() % 12 || 12;
-    return `${h12}:${p(d.getMinutes())} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
+    if (clockFormat === '24') return { text: `${p(d.getHours())}:${p(d.getMinutes())}`, ampm: '' };
+    const h = d.getHours();
+    return { text: `${p(h % 12 || 12)}:${p(d.getMinutes())}`, ampm: h < 12 ? 'AM' : 'PM' };
   }
 }
 
@@ -230,8 +233,10 @@ function buildBoard(data, opts = {}) {
     visible.forEach((m, i) => {
       const r = rowRefs[i];
       r.msg = m;
-      const dep = formatDepart(departDate(m));
-      if (r.departEl && r.departEl.textContent !== dep) r.departEl.textContent = dep;
+      const dp = departParts(departDate(m));
+      renderFlips(r.departsEl, dp.text);
+      if (r.departAmpmEl && r.departAmpmEl.textContent !== dp.ampm) r.departAmpmEl.textContent = dp.ampm;
+      if (r.departAmpmEl) r.departAmpmEl.classList.toggle('hidden', !dp.ampm);
     });
     return;
   }
@@ -245,12 +250,14 @@ function buildBoard(data, opts = {}) {
     row.className = `row ${st.cls}`;
     const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
     // Left: countdown flips. Middle: destination + direction/line (line stays
-    // tappable for filtering). Right: wall-clock departure time.
+    // tappable for filtering). Right: departure wall-clock in split-flap flips.
+    const dp = departParts(departDate(m));
     row.innerHTML = `
       <div class="col-time"><div class="flips"></div><div class="row-status">${st.label}</div></div>
       <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line" style="--c:${m.line.color}">${m.line.short}</span></div></div>
-      <div class="status col-depart"><div class="depart-time">${formatDepart(departDate(m))}</div></div>`;
+      <div class="status col-depart"><div class="departs"></div><div class="depart-ampm${dp.ampm ? '' : ' hidden'}">${dp.ampm}</div></div>`;
     renderFlips(row.querySelector('.flips'), flipString(sec));
+    renderFlips(row.querySelector('.departs'), dp.text);
     renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
     // tap destination → filter to that destination; tap line text → filter to that line
     const destEl = row.querySelector('.dest');
@@ -262,7 +269,7 @@ function buildBoard(data, opts = {}) {
     if (lineFilter && lineMatches(m, lineFilter)) subLineEl.classList.add('active');
     subLineEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
     scheduleEl.appendChild(row);
-    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departEl: row.querySelector('.depart-time'), row, msg: m });
+    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), departAmpmEl: row.querySelector('.depart-ampm'), row, msg: m });
   }
 }
 
