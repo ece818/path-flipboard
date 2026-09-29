@@ -98,14 +98,14 @@ button:hover{border-color:var(--amber)}
 .alert{margin:0 0 12px;background:#2a0d0d;border:1px solid #7f1d1d;color:#ffb4b4;padding:10px 12px;border-radius:6px;font-size:13px;letter-spacing:.04em}
 .hidden{display:none}
 
-.board-head-row{display:grid;grid-template-columns:150px 1fr 130px;gap:10px;
+.board-head-row{display:grid;grid-template-columns:150px 1fr 150px;gap:10px;
   font-size:11px;letter-spacing:.3em;color:var(--muted);padding:0 6px 8px}
 .col-status{text-align:right}
 
 /* flap board */
 .flap-board{background:#000;border-radius:8px;padding:10px;box-shadow:inset 0 4px 24px #000, inset 0 0 120px rgba(255,176,0,.04);display:grid;gap:10px}
 .row{
-  display:grid;grid-template-columns:150px 1fr 130px;gap:10px;align-items:center;
+  display:grid;grid-template-columns:150px 1fr 150px;gap:10px;align-items:center;
   background:linear-gradient(180deg,#101012,#08080a);border:1px solid #26262b;border-radius:6px;padding:10px 12px;
   min-width:0;overflow:hidden;
 }
@@ -119,12 +119,8 @@ button:hover{border-color:var(--amber)}
 .row.due .row-status{color:var(--green)}
 .status{text-align:right}
 .status small{display:block;color:var(--muted);font-size:11px;letter-spacing:.2em;margin-top:6px}
-.col-depart{display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
-.departs{display:flex;gap:3px;align-items:center;justify-content:flex-end}
-.departs .flip{font-size:clamp(17px,3.2vw,26px)}
-.departs .colon{font-size:clamp(14px,2.8vw,22px)}
-.depart-ampm{font-size:11px;letter-spacing:.2em;color:var(--muted);margin-top:6px;min-height:1em}
-.depart-ampm.hidden{display:none}
+.col-due{display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
+.departs{display:flex;gap:3px;align-items:center}
 .sub-line{color:var(--c,var(--muted));cursor:pointer;border-radius:3px;padding:0 3px}
 .sub-line:hover{filter:brightness(1.35);outline:1px solid var(--c,var(--muted));outline-offset:1px}
 .sub-line.active{background:var(--c);color:#000;font-weight:700;padding:0 5px}
@@ -244,12 +240,8 @@ body.theater .exit-theater{display:block}
   .tile{font-size:12px;min-width:.8em;padding:.18em .02em;flex:0 1 auto}
   .tile.space{min-width:.3em}
   .row-sub{font-size:9.5px;margin-top:4px;letter-spacing:.08em}
-  /* line stays visible in the sub-line on mobile — the right column is now departure flips */
-  .departs{gap:2px}
-  .departs .flip{font-size:15px;width:.68em}
-  .departs .colon{font-size:13px}
-  .depart-ampm{font-size:9px;margin-top:4px}
-  .col-depart{min-width:70px}
+  /* line stays visible in the sub-line on mobile — the left column is now departure flips */
+  .departs{flex-wrap:nowrap;overflow:hidden}
   .board-foot{gap:6px;font-size:10px}
   .badge{font-size:10px;padding:1px 6px}
   .foot-note{font-size:10px;margin-left:0;flex-basis:100%}

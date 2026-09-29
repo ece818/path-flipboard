@@ -122,20 +122,19 @@ function departDate(m) {
   const t = Number.isFinite(base) ? base + m.secondsToArrivalNum * 1000 : fallback;
   return new Date(t);
 }
-function departParts(d) {
-  // Split ET wall-clock time into flip digits ("09:21") + AM/PM label,
-  // so the right column reuses the same split-flap rendering as countdowns.
+function departText(d) {
+  // ET wall-clock departure ("09:25") for the left column — full-size flips,
+  // no AM/PM label.
   try {
     const o = Object.fromEntries(
       new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: clockFormat !== '24' })
         .formatToParts(d).map(p => [p.type, p.value])
     );
-    return { text: `${o.hour}:${o.minute}`, ampm: clockFormat === '24' ? '' : (o.dayPeriod || '').toUpperCase() };
+    return `${o.hour}:${o.minute}`;
   } catch {
     const p = n => String(n).padStart(2, '0');
-    if (clockFormat === '24') return { text: `${p(d.getHours())}:${p(d.getMinutes())}`, ampm: '' };
-    const h = d.getHours();
-    return { text: `${p(h % 12 || 12)}:${p(d.getMinutes())}`, ampm: h < 12 ? 'AM' : 'PM' };
+    if (clockFormat === '24') return `${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${p(d.getHours() % 12 || 12)}:${p(d.getMinutes())}`;
   }
 }
 
@@ -233,10 +232,7 @@ function buildBoard(data, opts = {}) {
     visible.forEach((m, i) => {
       const r = rowRefs[i];
       r.msg = m;
-      const dp = departParts(departDate(m));
-      renderFlips(r.departsEl, dp.text);
-      if (r.departAmpmEl && r.departAmpmEl.textContent !== dp.ampm) r.departAmpmEl.textContent = dp.ampm;
-      if (r.departAmpmEl) r.departAmpmEl.classList.toggle('hidden', !dp.ampm);
+      renderFlips(r.departsEl, departText(departDate(m)));
     });
     return;
   }
@@ -249,15 +245,14 @@ function buildBoard(data, opts = {}) {
     const row = document.createElement('div');
     row.className = `row ${st.cls}`;
     const dirTag = m.dir === 'ToNY' ? '→ NEW YORK' : m.dir === 'ToNJ' ? '→ NEW JERSEY' : m.dir.toUpperCase();
-    // Left: countdown flips. Middle: destination + direction/line (line stays
-    // tappable for filtering). Right: departure wall-clock in split-flap flips.
-    const dp = departParts(departDate(m));
+    // Left: departure wall-clock flips. Middle: destination + direction/line
+    // (line stays tappable for filtering). Right: countdown flips + status.
     row.innerHTML = `
-      <div class="col-time"><div class="flips"></div><div class="row-status">${st.label}</div></div>
+      <div class="col-time"><div class="departs"></div></div>
       <div class="col-dest"><div class="dest"></div><div class="row-sub">${dirTag} <span class="sub-sep">•</span> <span class="sub-line" style="--c:${m.line.color}">${m.line.short}</span></div></div>
-      <div class="status col-depart"><div class="departs"></div><div class="depart-ampm${dp.ampm ? '' : ' hidden'}">${dp.ampm}</div></div>`;
+      <div class="status col-due"><div class="flips"></div><div class="row-status">${st.label}</div></div>`;
+    renderFlips(row.querySelector('.departs'), departText(departDate(m)));
     renderFlips(row.querySelector('.flips'), flipString(sec));
-    renderFlips(row.querySelector('.departs'), dp.text);
     renderTiles(row.querySelector('.dest'), shortDest(m.headSign));
     // tap destination → filter to that destination; tap line text → filter to that line
     const destEl = row.querySelector('.dest');
@@ -269,7 +264,7 @@ function buildBoard(data, opts = {}) {
     if (lineFilter && lineMatches(m, lineFilter)) subLineEl.classList.add('active');
     subLineEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
     scheduleEl.appendChild(row);
-    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), departAmpmEl: row.querySelector('.depart-ampm'), row, msg: m });
+    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), row, msg: m });
   }
 }
 
