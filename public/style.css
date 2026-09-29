@@ -182,16 +182,22 @@ button:hover{border-color:var(--amber)}
 .empty.tappable{cursor:pointer}
 .empty.tappable:hover{color:var(--amber)}
 
-/* theater / focus mode — just the flipboards */
+/* theater / focus mode — flipboards + clock title bar on top */
 body.theater{background:#000}
 body.theater .station-shell{max-width:none;padding:8px}
-body.theater .station-head,
+body.theater .head-left,
 body.theater .board-topbar,
 body.theater .board-meta,
 body.theater .filter-bar,
 body.theater .board-head-row,
 body.theater .board-foot,
 body.theater .fallback{display:none}
+body.theater .station-head{justify-content:center;margin-bottom:8px}
+body.theater .head-clock{text-align:center}
+body.theater .clock-label{text-align:center}
+body.theater .clock-row{justify-content:center}
+body.theater .clock-flips .flip{font-size:40px}
+body.theater .clock-flips .colon{font-size:34px}
 body.theater .board-frame{padding:8px;border-radius:8px}
 body.theater .flap-board{gap:8px}
 /* small exit button — only visible in theater mode, docked directly below the board */
