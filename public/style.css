@@ -113,7 +113,9 @@ button:hover{border-color:var(--amber)}
 .row.approach{border-color:#5a4413;box-shadow:inset 0 0 24px rgba(255,176,0,.08)}
 .row.due{border-color:#1f6b35;box-shadow:inset 0 0 24px rgba(61,255,122,.1)}
 .flips{display:flex;gap:3px;align-items:center}
-.row-status{font-size:12px;letter-spacing:.18em;margin-top:6px;color:var(--amber);min-height:1em}
+.row-status{display:flex;gap:2px;justify-content:flex-end;font-size:12px;letter-spacing:.18em;margin-top:6px;color:var(--amber);min-height:1.6em}
+.row-status .tile{font-size:inherit;min-width:0;color:inherit;text-shadow:none;letter-spacing:normal}
+.row-status .tile > span{padding:0 .03em}
 .row-status.hidden{display:none}
 .row.approach .row-status{color:var(--amber);animation:pulse 1s infinite}
 .row.due .row-status{color:var(--green)}
@@ -139,24 +141,37 @@ button:hover{border-color:var(--amber)}
 .f-leaf{position:absolute;left:0;right:0;backface-visibility:hidden;z-index:2}
 .f-leaf-top{top:0;transform-origin:bottom;transform:rotateX(0)}
 .f-leaf-bottom{bottom:0;transform-origin:top;transform:rotateX(90deg)}
-.flip.flip-go .f-leaf-top{animation:leafTop .28s ease-in forwards}
-.flip.flip-go .f-leaf-bottom{animation:leafBot .28s ease-out .28s forwards}
+.flip.flip-go .f-leaf-top,.tile.flip-go .f-leaf-top{animation:leafTop .28s ease-in forwards}
+.flip.flip-go .f-leaf-bottom,.tile.flip-go .f-leaf-bottom{animation:leafBot .28s ease-out .28s forwards}
 @keyframes leafTop{to{transform:rotateX(-90deg)}}
 @keyframes leafBot{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
 .colon{font-size:clamp(20px,4vw,32px);color:var(--amber);animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:.25}}
 .clock-flips .flip{font-size:30px}
 
-/* destination + route letter tiles — single row, tap to filter */
+/* destination + route letter tiles — single row of flaps, tap to filter */
 .dest,.route{display:flex;flex-wrap:nowrap;gap:2px;overflow:hidden;cursor:pointer;border-radius:2px;flex:0 1 auto;min-width:0}
 .dest:hover,.route:hover{filter:brightness(1.25)}
 .dest.active{outline:1px solid var(--amber);outline-offset:2px}
+/* .tile is a split-flap, same mechanics as .flip: two static halves plus two
+   rotating leaves. The box height is explicit so the halves can split it 50/50
+   and the glyph lands on the seam; horizontal padding lives on the halves, so
+   the absolutely positioned leaves line up edge to edge with them.
+   The surface gradient and any frame live on the TILE, never on a half: a
+   border on a half would both clip the glyph short of the seam and push its
+   content box off centre, breaking the line-height trick below. */
 .tile{
-  display:inline-block;min-width:.8em;padding:.22em .05em;text-align:center;flex:0 1 auto;
-  font-size:clamp(13px,2vw,18px);color:var(--text);background:linear-gradient(180deg,#1b1b1f 49.2%,#000 49.2% 50.8%,#0e0e10 50.8%);
-  border-radius:2px;text-shadow:0 0 10px rgba(245,241,230,.35);white-space:nowrap;
-  animation:tileIn .3s backwards;
+  position:relative;display:inline-block;box-sizing:border-box;
+  min-width:.8em;height:1.6em;text-align:center;flex:0 1 auto;
+  font-size:clamp(13px,2vw,18px);line-height:1;white-space:nowrap;
+  color:var(--text);text-shadow:0 0 10px rgba(245,241,230,.35);
+  background:linear-gradient(180deg,#1b1b1f 49.2%,#000 49.2% 50.8%,#0e0e10 50.8%);
+  border-radius:2px;perspective:300px;animation:tileIn .3s backwards;
 }
+.tile > span{display:block;box-sizing:border-box;height:50%;padding:0 .06em;overflow:hidden}
+/* leaves must stay opaque while they swing, or the static glyph shows through */
+.tile .f-leaf{background:inherit}
+.tile .f-top,.tile .f-leaf-top{line-height:1.6em}
 @keyframes tileIn{from{transform:rotateX(-80deg);opacity:0}to{transform:rotateX(0);opacity:1}}
 
 /* footer */
@@ -214,8 +229,11 @@ body.theater .dest,body.theater .route{flex:0 0 auto}
    overflow the middle (tablet / phone) — digits shrink too, which narrows the
    flanks and gives tiles room while keeping digit/tile heights proportional;
    floor 9px, older browsers: preceding vmin clamp */
-body.theater .tile{font-size:clamp(13px,3vmin,40px);font-size:max(9px,min(var(--tile-fit,9999px),36cqh,4.5vmin,72px,3.5vw));min-width:.68em;padding:.22em .12em}
+body.theater .tile{font-size:clamp(13px,3vmin,40px);font-size:max(9px,min(var(--tile-fit,9999px),36cqh,4.5vmin,72px,3.5vw));min-width:.68em}
+body.theater .tile > span{padding:0 .12em}
 body.theater .row-status{font-size:clamp(10px,1.6vmin,16px)}
+body.theater .row-status .tile{font-size:inherit;min-width:0}
+body.theater .row-status .tile > span{padding:0 .03em}
 /* rotated phones in fullscreen use the same horizontal strip as bigger
    screens; portrait phones keep the stacked layout (fits bigger letters) */
 @media (max-width:700px) and (orientation:landscape){
@@ -262,7 +280,8 @@ body.theater .exit-theater{display:block}
   .flips{flex-wrap:nowrap;overflow:hidden}
   .row-status{font-size:10px;margin-top:4px}
   .dest,.route{gap:2px;min-width:0}
-  .tile{font-size:12px;min-width:.8em;padding:.18em .02em;flex:0 1 auto}
+  .tile{font-size:12px;min-width:.8em;flex:0 1 auto}
+  .tile > span{padding:0 .03em}
   /* stacked tile rows on narrow screens: destination over route, same size */
   .col-dest{flex-direction:column;align-items:stretch;gap:4px}
   .board-foot{gap:6px;font-size:10px}
@@ -308,7 +327,10 @@ body.light .row.approach{border-color:#b98a1d;box-shadow:inset 0 0 24px rgba(185
 body.light .row.due{border-color:#1f6b35;box-shadow:inset 0 0 24px rgba(15,122,50,.12)}
 body.light .flip span{background:linear-gradient(180deg,#ffffff 49.4%,#d8d2c4 49.4% 50.6%,#f0ebdd 50.6%);color:var(--amber);text-shadow:none;border:1px solid #e0dccf;border-bottom-color:#c9c2b0}
 body.light .colon{color:var(--amber)}
-body.light .tile{background:linear-gradient(180deg,#ffffff 49.2%,#d8d2c4 49.2% 50.8%,#f0ebdd 50.8%);color:#1c1c1f;text-shadow:none;border:1px solid #e0dccf}
+body.light .tile{color:#1c1c1f;text-shadow:none;background:linear-gradient(180deg,#ffffff 49.2%,#d8d2c4 49.2% 50.8%,#f0ebdd 50.8%)}
+/* frame sits above the halves (z-index 3) so it never eats glyph pixels at the seam */
+body.light .tile::after{content:"";position:absolute;inset:0;border:1px solid #e0dccf;border-radius:2px;pointer-events:none;z-index:3}
+body.light .row-status .tile{color:inherit}
 body.light .route .tile{color:var(--c)}
 body.light .filter-bar{background:#fdf6e0;border-color:#d3b34c;color:var(--amber)}
 body.light .filter-bar button{background:transparent;border-color:#d3b34c;color:var(--amber);box-shadow:none}

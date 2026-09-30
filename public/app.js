@@ -70,17 +70,68 @@ function renderFlips(container, str) {
   }
 }
 
-/* ---------- destination letter tiles ---------- */
+/* ---------- split-flap letter tile (destination, route, status) ----------
+   Same mechanics as .flip: two static halves + two rotating leaves. Unchanged
+   letters are left alone, so a line or destination change flaps character by
+   character instead of repainting the strip. */
+function tileChar(ch) {
+  return ch === ' ' ? '\u00A0' : ch;
+}
+function makeTile(ch = ' ') {
+  const el = document.createElement('span');
+  el.className = 'tile';
+  el.dataset.v = ch;
+  for (const cls of ['f-top', 'f-bottom', 'f-leaf f-leaf-top', 'f-leaf f-leaf-bottom']) {
+    const s = document.createElement('span');
+    s.className = cls;
+    s.textContent = ch;
+    el.appendChild(s);
+  }
+  return el;
+}
+/* Strings are padded (padEnd/padStart), so length changes are tail-only:
+   append the extra flaps or drop the surplus ones — never wipe the strip. */
+function resizeTiles(container, chars) {
+  let tiles = [...container.querySelectorAll('.tile')];
+  if (tiles.length < chars.length) {
+    for (let i = tiles.length; i < chars.length; i++) {
+      const t = makeTile(chars[i]);
+      t.style.animationDelay = `${Math.min(i * 18, 450)}ms`;
+      container.appendChild(t);
+    }
+    tiles = [...container.querySelectorAll('.tile')];
+  } else if (tiles.length > chars.length) {
+    for (let i = tiles.length - 1; i >= chars.length; i--) tiles[i].remove();
+    tiles = tiles.slice(0, chars.length);
+  }
+  return tiles;
+}
 function renderTiles(container, text) {
-  container.innerHTML = '';
-  const upper = text.toUpperCase().slice(0, 64);
-  [...upper].forEach((ch, i) => {
-    const t = document.createElement('span');
-    t.className = 'tile' + (ch === ' ' ? ' space' : '');
-    t.textContent = ch === ' ' ? '\u00A0' : ch;
-    t.style.animationDelay = `${Math.min(i * 18, 450)}ms`;
-    container.appendChild(t);
+  const chars = [...text.toUpperCase().slice(0, 64)].map(tileChar);
+  const tiles = resizeTiles(container, chars);
+  const pending = [];
+  chars.forEach((ch, i) => {
+    const el = tiles[i];
+    if (!el || el.dataset.v === ch) return;
+    const old = el.dataset.v ?? ch;
+    el.dataset.v = ch;
+    el.querySelector('.f-top').textContent = ch;
+    el.querySelector('.f-bottom').textContent = ch;
+    el.querySelector('.f-leaf-top').textContent = old;
+    el.querySelector('.f-leaf-bottom').textContent = ch;
+    el.classList.remove('flip-go');
+    pending.push(el);
   });
+  if (!pending.length) return;
+  void container.offsetWidth; // one reflow restarts every flap in this strip
+  for (const el of pending) el.classList.add('flip-go');
+}
+
+/* Status label under the countdown — padded so it always flips in place */
+const STATUS_WIDTH = 'APPROACHING'.length;
+function renderStatus(el, label) {
+  el.classList.toggle('hidden', !label);
+  renderTiles(el, label.padStart(STATUS_WIDTH));
 }
 
 /* ---------- countdown helpers ---------- */
@@ -147,7 +198,7 @@ function departText(d) {
 
 /* ---------- board render ---------- */
 let trains = [];   // flat sorted list
-let rowRefs = [];  // [{flipsEl, statusEl, msg}]
+let rowRefs = [];  // [{row, flipsEl, departsEl, statusEl, destEl, routeEl, msg, key}]
 let lastData = null;
 let isStale = false;
 let loading = false;
@@ -185,27 +236,28 @@ function setLineFilter(value) {
   lineFilter = (lineFilter === value) ? null : value;
   if (lineFilter) destFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData, { force: true });
+  if (lastData) buildBoard(lastData);
 }
 function setDestFilter(value) {
   destFilter = (destFilter === value) ? null : value;
   if (destFilter) lineFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData, { force: true });
+  if (lastData) buildBoard(lastData);
 }
 function clearFilter() {
   lineFilter = null;
   destFilter = null;
   updateFilterUI();
-  if (lastData) buildBoard(lastData, { force: true });
+  if (lastData) buildBoard(lastData);
 }
 
-let lastVisibleKeys = null;
 function visibleKey(m) {
   // Stable identity per train: same physical departure even as countdown ticks.
   // Round departure to the minute so a 15s refresh doesn't look like a new train.
+  // The line is deliberately NOT in the key: when a train's line changes for the
+  // same departure, the row survives and only the route strip flaps.
   const depMin = Math.round(departDate(m).getTime() / 60000);
-  return `${m.dir}|${m.headSign.toUpperCase()}|${m.line.short}|${depMin}`;
+  return `${m.dir}|${m.headSign.toUpperCase()}|${depMin}`;
 }
 
 /* Theater strips must reach the countdown on every viewport. The route block
@@ -248,9 +300,59 @@ function fitTileStrips() {
   }
 }
 
-function buildBoard(data, opts = {}) {
+/* Row shell: built once, then reused for as long as the board lives. Content
+   handlers read r.msg at click time so a recycled row keeps working. */
+function createRow() {
+  const row = document.createElement('div');
+  row.className = 'row';
+  // Left: departure wall-clock flips. Middle: destination tiles + route
+  // tiles (same size). Right: countdown flips + status.
+  row.innerHTML = `
+    <div class="col-time"><div class="departs"></div></div>
+    <div class="col-dest"><div class="dest"></div><div class="route"></div></div>
+    <div class="status col-due"><div class="flips"></div><div class="row-status hidden"></div></div>`;
+  const r = {
+    row,
+    departsEl: row.querySelector('.departs'),
+    flipsEl: row.querySelector('.flips'),
+    statusEl: row.querySelector('.row-status'),
+    destEl: row.querySelector('.dest'),
+    routeEl: row.querySelector('.route'),
+    msg: null,
+    key: null,
+  };
+  // tap destination → filter to that destination; tap route → filter to that line
+  r.destEl.addEventListener('click', () => r.msg && setDestFilter(r.msg.headSign.toUpperCase()));
+  r.routeEl.addEventListener('click', (e) => { e.stopPropagation(); if (r.msg) setLineFilter(r.msg.line.short); });
+  return r;
+}
+
+/* Paint one train onto one row. Everything goes through the flip engines, so
+   only the characters that actually changed move. */
+function updateRow(r, m, maxDest, maxRoute) {
+  r.msg = m;
+  r.key = visibleKey(m);
+  r.row.style.display = ''; // may have been hidden by the tick after departing
+  const sec = remainingSec(m);
+  const st = statusFor(sec);
+  r.row.classList.toggle('approach', st.cls === 'approach');
+  r.row.classList.toggle('due', st.cls === 'due');
+  r.routeEl.style.setProperty('--c', m.line.color);
+  renderFlips(r.departsEl, departText(departDate(m)));
+  renderFlips(r.flipsEl, flipString(sec));
+  // Equal-length tile strips: pad destinations and routes to the longest
+  // visible one, so trailing positions render as blank flaps on every row.
+  renderTiles(r.destEl, shortDest(m.headSign).padEnd(maxDest));
+  renderTiles(r.routeEl, routeStr(m).padEnd(maxRoute));
+  r.destEl.title = `Show only ${m.headSign}`;
+  r.destEl.classList.toggle('active', destFilter === m.headSign.toUpperCase());
+  r.routeEl.title = `Show only ${m.line.short}`;
+  r.routeEl.classList.toggle('active', !!lineFilter && lineMatches(m, lineFilter));
+  renderStatus(r.statusEl, st.label);
+}
+
+function buildBoard(data) {
   lastData = data;
-  const force = !!opts.force;
   trains = data.destinations.flatMap(d => d.messages.map(m => ({ ...m, dir: d.label })));
   // Drop trains that departed a while ago (snapshot may be minutes old).
   trains = trains.filter(m => remainingSec(m) > -120);
@@ -258,65 +360,49 @@ function buildBoard(data, opts = {}) {
   const visible = applyFilters(trains).slice(0, 10);
 
   if (!trains.length) {
-    lastVisibleKeys = null;
     scheduleEl.innerHTML = `<div class="empty">— NO TRAINS REPORTED —</div>`;
     rowRefs = [];
     return;
   }
   if (!visible.length) {
-    lastVisibleKeys = null;
     const label = lineFilter || destFilter || 'FILTER';
     scheduleEl.innerHTML = `<div class="empty tappable">— NO ${label} TRAINS — TAP TO CLEAR —</div>`;
     scheduleEl.querySelector('.empty').addEventListener('click', clearFilter);
     rowRefs = [];
     return;
   }
-  // Reconciliation: same trains in same order → don't rebuild DOM (stops blink /
-  // tile animation replay on every 15s refresh). Just point rows at fresh data
-  // so countdowns stay accurate, and refresh departure times in place.
-  const keys = visible.map(visibleKey);
-  if (!force && lastVisibleKeys && keys.length === lastVisibleKeys.length && keys.every((k, i) => k === lastVisibleKeys[i]) && rowRefs.length === visible.length) {
-    visible.forEach((m, i) => {
-      const r = rowRefs[i];
-      r.msg = m;
-      renderFlips(r.departsEl, departText(departDate(m)));
-    });
-    return;
-  }
-  lastVisibleKeys = keys;
-  scheduleEl.innerHTML = '';
-  rowRefs = [];
-  // Equal-length tile strips: pad destinations and routes to the longest
-  // visible one, so trailing positions render as blank flaps on every row.
   const maxDest = Math.max(...visible.map(m => shortDest(m.headSign).length));
   const maxRoute = Math.max(...visible.map(m => routeStr(m).length));
-  for (const m of visible) {
-    const sec = remainingSec(m);
-    const st = statusFor(sec);
-    const row = document.createElement('div');
-    row.className = `row ${st.cls}`;
-    // Left: departure wall-clock flips. Middle: destination tiles + route
-    // tiles (same size). Right: countdown flips + status.
-    row.innerHTML = `
-      <div class="col-time"><div class="departs"></div></div>
-      <div class="col-dest"><div class="dest"></div><div class="route" style="--c:${m.line.color}"></div></div>
-      <div class="status col-due"><div class="flips"></div><div class="row-status">${st.label}</div></div>`;
-    renderFlips(row.querySelector('.departs'), departText(departDate(m)));
-    renderFlips(row.querySelector('.flips'), flipString(sec));
-    renderTiles(row.querySelector('.dest'), shortDest(m.headSign).padEnd(maxDest));
-    renderTiles(row.querySelector('.route'), routeStr(m).padEnd(maxRoute));
-    // tap destination → filter to that destination; tap route → filter to that line
-    const destEl = row.querySelector('.dest');
-    destEl.title = `Show only ${m.headSign}`;
-    if (destFilter === m.headSign.toUpperCase()) destEl.classList.add('active');
-    destEl.addEventListener('click', () => setDestFilter(m.headSign.toUpperCase()));
-    const routeEl = row.querySelector('.route');
-    routeEl.title = `Show only ${m.line.short}`;
-    if (lineFilter && lineMatches(m, lineFilter)) routeEl.classList.add('active');
-    routeEl.addEventListener('click', (e) => { e.stopPropagation(); setLineFilter(m.line.short); });
-    scheduleEl.appendChild(row);
-    rowRefs.push({ flipsEl: row.querySelector('.flips'), statusEl: row.querySelector('.row-status'), departsEl: row.querySelector('.departs'), row, msg: m });
+  /* Reconciliation: match live rows to the new train list by identity — order
+     doesn't matter — then recycle unmatched rows as shells for new trains.
+     Nothing is wiped, so a line/destination change, a re-sort or a new train
+     reads as a flap instead of a board refresh. */
+  const pool = new Map();
+  for (const r of rowRefs) {
+    if (!r.key) continue;
+    const a = pool.get(r.key);
+    if (a) a.push(r); else pool.set(r.key, [r]);
   }
+  const next = visible.map(m => {
+    const a = pool.get(visibleKey(m));
+    if (a && a.length) {
+      const r = a.shift();
+      if (!a.length) pool.delete(r.key);
+      return { m, r };
+    }
+    return { m, r: null };
+  });
+  const spares = [];
+  for (const a of pool.values()) spares.push(...a);
+  // Take spares front-to-back: the top rows (soonest departures) keep their shells.
+  for (const item of next) if (!item.r) item.r = spares.shift() || createRow();
+  if (!rowRefs.length) scheduleEl.innerHTML = ''; // drop a leftover empty-state node
+  // Attach first: flaps animated while detached never start, and would stick
+  // on the old character.
+  for (const item of next) scheduleEl.appendChild(item.r.row);
+  for (const item of next) updateRow(item.r, item.m, maxDest, maxRoute);
+  for (const r of spares) r.row.remove();
+  rowRefs = next.map(i => i.r);
   fitTileStrips();
 }
 
@@ -329,10 +415,7 @@ setInterval(() => {
     const st = statusFor(sec);
     r.row.classList.toggle('approach', st.cls === 'approach');
     r.row.classList.toggle('due', st.cls === 'due');
-    if (r.statusEl.textContent !== st.label) {
-      r.statusEl.textContent = st.label;
-      r.statusEl.classList.toggle('hidden', !st.label);
-    }
+    renderStatus(r.statusEl, st.label);
   }
 }, 1000);
 
@@ -410,7 +493,7 @@ if (settingsBtn && settingsMenu) {
       try { localStorage.setItem('path:clockFormat', clockFormat); } catch {}
       syncClockFormatUI();
       tickClock();
-      if (lastData) buildBoard(lastData, { force: true });
+      if (lastData) buildBoard(lastData);
     });
   });
 }
@@ -610,7 +693,6 @@ async function loadStation(code, opts = {}) {
       setStatus('error', 'OFFLINE');
       scheduleEl.innerHTML = `<div class="empty">— SIGNAL LOST —</div>`;
       rowRefs = [];
-      lastVisibleKeys = null;
     }
   } finally {
     loading = false;
@@ -652,7 +734,6 @@ stationSelect.addEventListener('change', () => {
   lineFilter = null;
   destFilter = null;
   updateFilterUI();
-  lastVisibleKeys = null;
   loadStation(stationSelect.value);
 });
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
