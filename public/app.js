@@ -26,6 +26,13 @@ const WORKER_URL = (() => {
   }
 })();
 
+/* Round watch (e.g. Galaxy Watch 7): small square-ish viewport. Layout lives
+   in the watch media query in style.css; JS only trims strings and drops
+   clock seconds here so strips stay inside the round bezel. */
+const WATCH_Q = '(max-width:560px) and (max-height:560px) and (min-aspect-ratio:3/4) and (max-aspect-ratio:4/3)';
+const watchMQ = matchMedia(WATCH_Q);
+const isWatch = () => watchMQ.matches;
+
 /* ---------- split-flap digit ---------- */
 function makeFlip(char = '0') {
   const el = document.createElement('span');
@@ -154,21 +161,37 @@ function statusFor(sec) {
   if (sec < 120) return { cls: 'approach', label: 'APPROACHING' };
   return { cls: '', label: '' }; // normal: countdown flips say it all, no duplicate text
 }
+/* Watch: the normal-state small line shows the departure wall-clock
+   ("DEP 09:25") instead of staying blank — the departure column is hidden
+   on round faces, and this restores the info at identical strip width. */
+function statusLabel(m, st) {
+  if (st.label || !isWatch() || !m) return st.label;
+  return `DEP ${departText(departDate(m))}`;
+}
 
 /* Shorten long headsigns so tile rows never wrap */
 function shortDest(text) {
-  return text.toUpperCase()
+  const s = text.toUpperCase()
     .replace('33RD STREET VIA HOBOKEN', '33RD VIA HOB')
     .replace('STREET', 'ST')
     .replace('VIA HOBOKEN', 'VIA HOB')
     .replace('JOURNAL SQUARE', 'JOURNAL SQ')
     .replace('WORLD TRADE CENTER', 'WORLD TRADE')
     .slice(0, 20);
+  if (!isWatch()) return s;
+  // Round bezel: strips are padded to the longest visible row, so cap the
+  // longest at 12 tiles — longer names get watch-specific shorts.
+  return s.replace('JOURNAL SQ VIA HOB', 'JSQ VIA HOB')
+    .replace('CHRISTOPHER ST', 'CHRIS ST')
+    .slice(0, 12);
 }
 
 /* Route strip shown as tiles right of the destination: line first (never
    clipped) then direction. Clicking it filters to that line. */
 function routeStr(m) {
+  // Watch: line chip only — the direction already reads in the headsign
+  // ("WORLD TRADE" = to NY) and the full string overflows the round bezel.
+  if (isWatch()) return m.line.short.replace(' (via HOB)', '');
   const dir = m.dir === 'ToNY' ? 'NEW YORK' : m.dir === 'ToNJ' ? 'NEW JERSEY' : m.dir.toUpperCase();
   return `${m.line.short} → ${dir}`;
 }
@@ -225,7 +248,9 @@ function updateFilterUI() {
   const label = lineFilter || destFilter;
   const kind = lineFilter ? 'LINE' : destFilter ? 'DEST' : null;
   filterBar.classList.toggle('hidden', !label);
-  if (label) filterText.textContent = `SHOWING ${kind}: ${label} — TAP AGAIN TO CLEAR`;
+  if (label) filterText.textContent = isWatch()
+    ? `${label} — TAP ✕` // narrow bezel: no room for the full sentence
+    : `SHOWING ${kind}: ${label} — TAP AGAIN TO CLEAR`;
   document.querySelectorAll('.badge').forEach(b => {
     b.classList.toggle('active', !!lineFilter && b.dataset.line === lineFilter);
   });
@@ -348,7 +373,7 @@ function updateRow(r, m, maxDest, maxRoute) {
   r.destEl.classList.toggle('active', destFilter === m.headSign.toUpperCase());
   r.routeEl.title = `Show only ${m.line.short}`;
   r.routeEl.classList.toggle('active', !!lineFilter && lineMatches(m, lineFilter));
-  renderStatus(r.statusEl, st.label);
+  renderStatus(r.statusEl, statusLabel(m, st));
 }
 
 function buildBoard(data) {
@@ -415,7 +440,7 @@ setInterval(() => {
     const st = statusFor(sec);
     r.row.classList.toggle('approach', st.cls === 'approach');
     r.row.classList.toggle('due', st.cls === 'due');
-    renderStatus(r.statusEl, st.label);
+    renderStatus(r.statusEl, statusLabel(r.msg, st));
   }
 }, 1000);
 
@@ -459,16 +484,18 @@ function tickClock() {
   const now = new Date();
   const p = n => String(n).padStart(2, '0');
   let h = now.getHours();
+  // Watch: HH:MM only — seconds don't fit the narrow top band of a round face.
+  const tsec = isWatch() ? '' : `:${p(now.getSeconds())}`;
   if (clockFormat === '12') {
     const ampm = h < 12 ? 'AM' : 'PM';
     h = h % 12 || 12;
-    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}:${p(now.getSeconds())}`);
+    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}${tsec}`);
     if (clockAmpm) {
       clockAmpm.textContent = ampm;
       clockAmpm.classList.remove('hidden');
     }
   } else {
-    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}:${p(now.getSeconds())}`);
+    renderFlips(clockEl, `${p(h)}:${p(now.getMinutes())}${tsec}`);
     if (clockAmpm) clockAmpm.classList.add('hidden');
   }
   clockDate.textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }).toUpperCase() + ' • ET';
@@ -706,7 +733,17 @@ function renderData(data, normalized) {
     ? new Date(data.lastUpdated).toLocaleString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
     : 'now';
   const src = data.live ? 'LIVE' : `SNAPSHOT ${Math.max(1, Math.round(data.ageMin || 0))}M OLD`;
-  metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
+  if (isWatch()) {
+    // bottom-tip status line: short source + ET update time + auto flag
+    let upd = '';
+    try {
+      upd = ' ' + new Date(data.lastUpdated).toLocaleTimeString('en-US',
+        { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+    } catch {}
+    metaLine.textContent = `${data.live ? 'LIVE' : `SNAP ${Math.max(1, Math.round(data.ageMin || 0))}M`}${upd} • ${autoRefresh.checked ? 'AUTO' : 'MANUAL'}`;
+  } else {
+    metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
+  }
   if (isStale) {
     setStatus('error', 'STALE');
     alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Retrying automatically (tap for details).`;
@@ -763,6 +800,13 @@ let fitTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(fitTimer);
   fitTimer = setTimeout(fitTileStrips, 150);
+});
+// entering / leaving watch size changes clock digits, route strips,
+// DEP lines and filter/meta wording — repaint the board, not just CSS
+watchMQ.addEventListener('change', () => {
+  tickClock();
+  updateFilterUI();
+  if (lastData) buildBoard(lastData);
 });
 fsBtn.addEventListener('click', toggleTheater);
 document.getElementById('exitTheater').addEventListener('click', toggleTheater);

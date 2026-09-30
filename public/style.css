@@ -339,3 +339,90 @@ body.light .foot-note a{color:var(--amber)}
 body.light.theater{background:#f5f1e6}
 body.light.theater .board-frame{background:#f5f1e6}
 body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
+
+/* ---- round watch (e.g. Galaxy Watch 7) — small square-ish viewport ----
+   Sizes in vmin so 160–480 CSS px viewports scale. Chrome is centered and
+   narrowed toward the poles where the round bezel cuts the corners; the
+   board scrolls internally so rows 4+ are a swipe away. Black background
+   blends into the bezel and suits AMOLED. */
+@media (max-width:560px) and (max-height:560px) and (min-aspect-ratio:3/4) and (max-aspect-ratio:4/3){
+  body:not(.light){background:#000}
+  body{overflow:hidden;overscroll-behavior:none}
+  .station-shell{max-width:none;height:100vh;height:100dvh;padding:4.5vmin 9vmin 10vmin;
+    display:flex;flex-direction:column;gap:1.5vmin}
+  .station-head{display:block;margin:0}
+  .head-left{display:none}
+  /* top pole: clock only, no date/gear (band is ~105px wide on a 240px face) */
+  .head-clock{width:34vmin;max-width:100%;margin:0 auto;text-align:center}
+  .clock-label{display:none}
+  .clock-row{justify-content:center;gap:1.2vmin}
+  .clock-flips{gap:.7vmin}
+  .clock-flips .flip{font-size:6.5vmin}
+  .clock-flips .colon{font-size:5.2vmin}
+  .clock-ampm{font-size:3.6vmin;padding:1vmin 1.6vmin;min-width:0}
+  .clock-settings{display:none}
+  /* frame chrome off — screws and borders would clip against the bezel */
+  .board-frame{background:none;border:none;box-shadow:none;border-radius:0;padding:0;
+    flex:1;min-height:0;display:flex;flex-direction:column;gap:1.5vmin}
+  .board-screws{display:none}
+  /* station + refresh + fullscreen on one centered row */
+  .board-topbar{width:66vmin;max-width:100%;margin:0 auto;gap:1.2vmin;flex-wrap:nowrap;align-items:center}
+  .board-station{flex:1 1 auto;min-width:0}
+  .board-station label{display:none}
+  select{margin:0;font-size:3.6vmin;letter-spacing:.04em;padding:1.8vmin 2vmin;width:100%;max-width:none}
+  .board-actions{margin:0;width:auto;justify-content:flex-end;gap:1.2vmin}
+  button{font-size:3.8vmin;padding:1.6vmin 2.4vmin}
+  .auto,.board-signal{display:none}
+  /* LIVE pills are topbar chrome; the bottom meta line carries status instead */
+  .filter-bar{order:2;margin:0;width:72vmin;max-width:100%;margin-inline:auto;
+    font-size:3.4vmin;padding:1.4vmin 2vmin;flex:0 0 auto}
+  .alert{order:3;margin:0;width:72vmin;max-width:100%;margin-inline:auto;
+    font-size:3.4vmin;padding:1.6vmin 2vmin;flex:0 0 auto;max-height:24vmin;overflow:auto}
+  .board-head-row{display:none}
+  .flap-board{order:4;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+    padding:1.2vmin;gap:1.2vmin;scrollbar-width:none}
+  .flap-board::-webkit-scrollbar{display:none}
+  /* two-column rows: stacked destination/line tiles | countdown + DEP line.
+     88% of the shell fits the safe band down to +0.34D. */
+  .row{grid-template-columns:minmax(0,1fr) auto;width:88%;margin-inline:auto;
+    gap:1.5vmin;padding:1.8vmin;align-items:center}
+  .col-time{display:none}
+  .col-dest{flex-direction:column;align-items:stretch;gap:1vmin}
+  .col-due .flips{justify-content:flex-end}
+  .flips{gap:.7vmin}
+  .flip{font-size:5.4vmin;width:.68em}
+  .colon{font-size:4.6vmin}
+  .dest,.route{gap:.4vmin}
+  .tile{font-size:4vmin;min-width:.7em}
+  .tile > span{padding:0 .04em}
+  .row-status{font-size:3.4vmin;margin-top:1vmin;gap:.3vmin}
+  /* fixed countdown column: APPROACHING must not shove the digits sideways */
+  .col-due{min-width:26vmin}
+  /* bottom tip: one narrow status line, then bezel-black padding */
+  .board-meta{order:6;display:block;margin:0;font-size:3.2vmin;letter-spacing:.1em;
+    text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    width:52vmin;max-width:100%;margin-inline:auto;flex:0 0 auto}
+  .board-foot,.fallback{display:none}
+  .empty{padding:4vmin;font-size:3.4vmin}
+  .exit-theater{width:9vmin;height:9vmin;font-size:4vmin}
+  /* watch focus mode: same compact rows, slightly bigger, capped at 3 so the
+     bottom row never dips into the bezel; vars keep the JS strip-fitter live */
+  body.theater .station-shell{padding:4.5vmin 9vmin 12vmin}
+  body.theater .station-head{margin-bottom:0}
+  body.theater .clock-label{display:none}
+  body.theater .clock-flips .flip{font-size:max(12px,6vmin)}
+  body.theater .clock-flips .colon{font-size:max(10px,4.8vmin)}
+  body.theater .board-frame{justify-content:flex-start;padding:0;min-height:0}
+  body.theater .flap-board{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;grid-auto-rows:auto;gap:1.5vmin}
+  body.theater .flap-board .row:nth-child(n+4){display:none}
+  body.theater .row{grid-template-columns:minmax(0,1fr) auto;width:88%;margin-inline:auto;
+    padding:1.2vmin 1.8vmin;gap:1.5vmin;container-type:normal}
+  body.theater .col-dest{flex-direction:column;align-items:stretch;justify-content:center;gap:1vmin}
+  body.theater .dest,body.theater .route{flex:0 1 auto}
+  body.theater .flip{font-size:max(13px,min(var(--flip-fit,9999px),6vmin))}
+  body.theater .colon{font-size:max(11px,min(var(--colon-fit,9999px),5vmin))}
+  body.theater .tile{font-size:max(10px,min(var(--tile-fit,9999px),4vmin));min-width:.66em}
+  body.theater .row-status{font-size:3vmin}
+  body.theater .col-due{min-width:25vmin}
+  body.theater .exit-theater{position:static;transform:none;margin:1.5vmin auto 0;flex:0 0 auto}
+}
