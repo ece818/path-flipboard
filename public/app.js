@@ -41,6 +41,23 @@ function makeFlip(char = '0') {
   el.innerHTML = `<span class="f-top">${char}</span><span class="f-bottom">${char}</span><span class="f-leaf f-leaf-top">${char}</span><span class="f-leaf f-leaf-bottom">${char}</span>`;
   return el;
 }
+/* Flip restart batching: each animation restart needs one forced layout +
+   style recalc. Doing that per digit (~20×/beat) re-lays-out the whole
+   container-query theater board every time — slow tablets blow the 1s beat
+   budget and beats slip to ~2s. So restarts are armed all beat long and fired
+   once behind a single reflow. */
+const pendingFlips = [];
+function armFlip(el) {
+  el.classList.remove('flip-go');
+  pendingFlips.push(el);
+}
+function fireFlips() {
+  if (!pendingFlips.length) return;
+  void document.documentElement.offsetWidth;
+  getComputedStyle(document.documentElement).opacity;
+  for (const el of pendingFlips) el.classList.add('flip-go');
+  pendingFlips.length = 0;
+}
 function setFlip(el, v) {
   if (el.dataset.v === v) return;
   const old = el.dataset.v ?? v;
@@ -49,13 +66,7 @@ function setFlip(el, v) {
   el.querySelector('.f-bottom').textContent = v;
   el.querySelector('.f-leaf-top').textContent = old;
   el.querySelector('.f-leaf-bottom').textContent = v;
-  // Robust restart: remove class, force both layout + style recalc, then add.
-  // On throttled tablets the single reflow trick can be swallowed; this
-  // survives throttling and still shows text immediately if animation drops.
-  el.classList.remove('flip-go');
-  el.offsetWidth;              // layout
-  getComputedStyle(el).opacity; // style
-  el.classList.add('flip-go');
+  armFlip(el);
 }
 function makeColon() {
   const c = document.createElement('span');
@@ -120,7 +131,6 @@ function resizeTiles(container, chars) {
 function renderTiles(container, text) {
   const chars = [...text.toUpperCase().slice(0, 64)].map(tileChar);
   const tiles = resizeTiles(container, chars);
-  const pending = [];
   chars.forEach((ch, i) => {
     const el = tiles[i];
     if (!el) return;
@@ -134,14 +144,8 @@ function renderTiles(container, text) {
     el.querySelector('.f-bottom').textContent = ch;
     el.querySelector('.f-leaf-top').textContent = old;
     el.querySelector('.f-leaf-bottom').textContent = ch;
-    el.classList.remove('flip-go');
-    pending.push(el);
+    armFlip(el);
   });
-  if (!pending.length) return;
-  // Robust restart: double recalc survives throttling (same as setFlip).
-  container.offsetWidth;
-  getComputedStyle(container).opacity;
-  for (const el of pending) el.classList.add('flip-go');
 }
 
 /* Status label under the countdown — padded so it always flips in place */
@@ -477,6 +481,7 @@ function beatAligned() {
     renderStatus(r.statusEl, statusLabel(r.msg, st));
   }
   tickClock();
+  fireFlips(); // one reflow for every armed restart this beat
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 }
 /* rAF-driven countdown: updates flip text directly from Date.now() every frame.
@@ -487,6 +492,7 @@ function flipLoop() {
       const sec = remainingSec(r.msg);
       if (sec > -120) renderFlips(r.flipsEl, flipString(sec));
     }
+    fireFlips(); // no-op on frames where nothing changed
   }
   requestAnimationFrame(flipLoop);
 }
