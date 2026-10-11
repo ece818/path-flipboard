@@ -207,6 +207,10 @@ button:hover{border-color:var(--amber)}
 /* leaves must stay opaque while they swing, or the static glyph shows through */
 .tile .f-leaf{background:inherit}
 .tile .f-top,.tile .f-leaf-top{line-height:1.6em}
+/* word-space gaps: transparent spacing instead of a flap box — a blank flap
+   shows only its seam line and reads as a broken tile */
+.tile.gap{background:transparent;min-width:.35em;animation:none}
+body.theater .tile.gap{min-width:.4em}
 @keyframes tileIn{from{transform:rotateX(-80deg);opacity:0}to{transform:rotateX(0);opacity:1}}
 
 /* footer */

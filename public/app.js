@@ -119,7 +119,11 @@ function renderTiles(container, text) {
   const pending = [];
   chars.forEach((ch, i) => {
     const el = tiles[i];
-    if (!el || el.dataset.v === ch) return;
+    if (!el) return;
+    // Word spaces are plain gaps, not flap boxes: a blank flap shows only
+    // the seam line and reads as a broken tile.
+    el.classList.toggle('gap', ch === '\u00A0');
+    if (el.dataset.v === ch) return;
     const old = el.dataset.v ?? ch;
     el.dataset.v = ch;
     el.querySelector('.f-top').textContent = ch;
@@ -356,7 +360,7 @@ function createRow() {
 
 /* Paint one train onto one row. Everything goes through the flip engines, so
    only the characters that actually changed move. */
-function updateRow(r, m, maxDest) {
+function updateRow(r, m) {
   r.msg = m;
   r.key = visibleKey(m);
   r.row.style.display = ''; // may have been hidden by the tick after departing
@@ -375,8 +379,10 @@ function updateRow(r, m, maxDest) {
     r.row.classList.remove('stale');
     renderFlips(r.flipsEl, flipString(sec));
   }
-  // Single destination strip (T2): full names fit now the route strip is gone.
-  renderTiles(r.destEl, shortDest(m.headSign).padEnd(maxDest));
+  // Single destination strip (T2): natural length — no trailing pad runs.
+  // (padEnd was tried; the blank tail flaps showed bare seams and read as
+  // broken tiles. Between-word spaces stay real blank flaps.)
+  renderTiles(r.destEl, shortDest(m.headSign));
   r.destEl.title = `Show only ${m.headSign}`;
   r.destEl.setAttribute('aria-label', `Show only ${m.headSign} trains`);
   const destOn = destFilter === m.headSign.toUpperCase();
@@ -412,7 +418,6 @@ function buildBoard(data) {
     rowRefs = [];
     return;
   }
-  const maxDest = Math.max(...visible.map(m => shortDest(m.headSign).length));
   /* Reconciliation: match live rows to the new train list by identity — order
      doesn't matter — then recycle unmatched rows as shells for new trains.
      Nothing is wiped, so a line/destination change, a re-sort or a new train
@@ -440,7 +445,7 @@ function buildBoard(data) {
   // Attach first: flaps animated while detached never start, and would stick
   // on the old character.
   for (const item of next) scheduleEl.appendChild(item.r.row);
-  for (const item of next) updateRow(item.r, item.m, maxDest);
+  for (const item of next) updateRow(item.r, item.m);
   for (const r of spares) r.row.remove();
   rowRefs = next.map(i => i.r);
   fitTileStrips();
