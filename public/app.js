@@ -451,9 +451,9 @@ function buildBoard(data) {
   fitTileStrips();
 }
 
-/* Tick every second: flip only changed digits, update status text.
+/* Row tick: flip only changed digits, update status text.
    Stale gate (R3-A): frozen wall-clock digits persist — only status syncs. */
-setInterval(() => {
+function rowTick() {
   for (const r of rowRefs) {
     const sec = remainingSec(r.msg);
     if (sec <= -120) { r.row.style.display = 'none'; continue; } // departed since render
@@ -463,7 +463,22 @@ setInterval(() => {
     r.row.classList.toggle('due', st.cls === 'due');
     renderStatus(r.statusEl, statusLabel(r.msg, st));
   }
-}, 1000);
+}
+/* Beat scheduler: countdowns and header clock advance on one wall-clock
+   beat. Naive setInterval drifts, and mobile browsers defer callbacks, so
+   clock and countdowns visibly jump together. Each beat is anchored to the
+   second boundary; after a >2.5s gap (missed beats) repaint fully so the
+   board resyncs instantly instead of stepping. */
+let lastBeat = 0;
+function beatAligned() {
+  const now = Date.now();
+  const missed = lastBeat !== 0 && now - lastBeat > 2500;
+  lastBeat = now;
+  if (missed && lastData) buildBoard(lastData); // resync: full repaint, not a step
+  else rowTick();
+  tickClock();
+  setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
+}
 
 /* ---------- dark mode (settings dropdown) ---------- */
 const darkModeToggle = document.getElementById('darkModeToggle');
@@ -545,8 +560,9 @@ if (settingsBtn && settingsMenu) {
     });
   });
 }
-setInterval(tickClock, 1000);
+rowTick();
 tickClock();
+setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 
 /* Data source: static snapshot (GitHub Pages) first, local proxy fallback.
    Static file is refreshed every 5 min by .github/workflows/pages.yml.
