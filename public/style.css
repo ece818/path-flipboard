@@ -232,6 +232,22 @@ body.theater .tile.gap{min-width:.4em}
 .empty.tappable{cursor:pointer;min-height:var(--tap);display:grid;place-items:center}
 .empty.tappable:hover{color:var(--amber)}
 
+/* wide viewports (landscape tablets, desktop-wide): the fluid type caps out
+   (38px flips / 20px tiles) while the viewport has headroom, leaving the
+   board small with empty mid-row space. Step up once past 1100px: wider
+   shell, bigger ceilings, flanks widened to fit ("05:29" ≈ 3.4em). */
+@media (min-width:1100px){
+  .station-shell{max-width:1100px}
+  .board-head-row{grid-template-columns:220px 1fr 220px}
+  .row{grid-template-columns:220px 1fr 220px;padding:14px 18px}
+  .flip{font-size:clamp(28px,4.6vw,52px)}
+  .status .flip{font-size:clamp(34px,5.4vw,62px)}
+  .col-time .flip{font-size:clamp(22px,3.6vw,38px)}
+  .colon{font-size:clamp(24px,4vw,44px)}
+  .tile{font-size:clamp(16px,2.2vw,28px)}
+  .clock-flips .flip{font-size:40px}
+}
+
 /* theater / focus mode — flipboards + clock title bar on top */
 body.theater{background:#000}
 body.theater .station-shell{max-width:none;padding:8px}
