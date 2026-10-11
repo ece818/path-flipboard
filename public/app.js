@@ -572,7 +572,6 @@ if (settingsBtn && settingsMenu) {
     });
   });
 }
-rowTick();
 tickClock();
 setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 
