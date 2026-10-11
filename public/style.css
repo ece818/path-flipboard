@@ -228,19 +228,6 @@ button:hover{border-color:var(--amber)}
 .empty.tappable{cursor:pointer;min-height:var(--tap);display:grid;place-items:center}
 .empty.tappable:hover{color:var(--amber)}
 
-/* tablet 701–1100px: between phone stacking and desktop spread. Strips stay
-   horizontal, digits/tiles step down one notch from desktop. This block lives
-   BEFORE the body.theater overrides so theater rules (later, equal-or-higher
-   specificity) always win. */
-@media (min-width:701px) and (max-width:1100px){
-  .station-shell{max-width:960px}
-  .row{padding:10px 14px}
-  .flip{font-size:22px}
-  .status .flip{font-size:34px}
-  .col-time .flip{font-size:22px}
-  .tile{font-size:14px}
-  .col-dest{flex-direction:row}
-}
 /* theater / focus mode — flipboards + clock title bar on top */
 body.theater{background:#000}
 body.theater .station-shell{max-width:none;padding:8px}

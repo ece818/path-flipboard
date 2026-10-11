@@ -79,10 +79,13 @@ Decision: keep chrome out of layout flow (no viewport-budget change per `AGENTS.
 - Timer: 4s after last `touchstart/mousemove/keydown` in theater → add `.idle`; any such event → remove + reset. Overlay is absolute so fade changes no layout.
 - Exit button remains keyboard-focusable when visible; fade never traps (touch restores). Note: the pill lock-dot fades with the chrome by design at ambient idle; any touch restores proof instantly.
 
-### Tablet breakpoint (`public/style.css`)
-- New `@media (min-width:701px) and (max-width:1100px)` section for normal + theater: row padding `10px 14px`, `.flip` base `22px` (normal) with theater cqh rule untouched, `.tile` base `14px`, `.col-dest` stays horizontal strip (no stacking), board max-width `960px` centered. Theater keeps `background:#000` in both themes (light-mode theater stays black: wall contrast); `body.light` normal-board vars unchanged.
-- Portrait tablets (768px wide): `fitTileStrips()` continues to govern overflow; floor `9px` tiles per existing rule; no new JS math.
-- Specificity and file order: place the 701–1100px breakpoint block BEFORE the `body.theater` override block in `style.css`, so theater rules (later, equal-or-higher specificity) always win. Never rely on order alone: theater selectors keep the `body.theater` prefix.
+### Tablet breakpoint (`public/style.css`) — REVERTED 2026-10-11 after field report
+Field finding (S24 Ultra rotated landscape = 832×384 CSS px): fixed sizes
+22/34/22/14px across 701–1100px shrank digits ~35% vs the fluid desktop
+clamps (38/45/28/18px at 832px) — the normal-mode breakpoint solved a
+non-problem and regressed landscape phones. Removed the block entirely;
+normal mode is fluid clamps at every width ≥701px again. Theater tablet
+behavior was never affected (theater selectors outrank) and is unchanged.
 - New UI works in dark (default) and `body.light`; row sub-line stays visible (carries line).
 
 ### Toggle UI (`public/index.html`)
