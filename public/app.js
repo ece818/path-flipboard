@@ -459,35 +459,38 @@ function buildBoard(data) {
   fitTileStrips();
 }
 
-/* Row tick: flip only changed digits, update status text.
-   Stale gate (R3-A): frozen wall-clock digits persist — only status syncs. */
-function rowTick() {
+/* Beat scheduler: status text, row classes, and header clock on wall-clock beats.
+   Countdown flip visuals run on a separate rAF loop from Date.now() — so they
+   stay smooth even when the beat callback is throttled to 2s+. */
+let prevBeatTs = 0;
+let worstBeatMs = 0;
+function beatAligned() {
+  const now = Date.now();
+  if (prevBeatTs !== 0) worstBeatMs = Math.max(worstBeatMs, now - prevBeatTs);
+  prevBeatTs = now;
   for (const r of rowRefs) {
     const sec = remainingSec(r.msg);
-    if (sec <= -120) { r.row.style.display = 'none'; continue; } // departed since render
-    if (!isStale) renderFlips(r.flipsEl, flipString(sec));
+    if (sec <= -120) { r.row.style.display = 'none'; continue; }
     const st = statusFor(sec);
     r.row.classList.toggle('approach', st.cls === 'approach');
     r.row.classList.toggle('due', st.cls === 'due');
     renderStatus(r.statusEl, statusLabel(r.msg, st));
   }
-}
-/* Beat scheduler: countdowns and header clock advance on one wall-clock
-   beat. Naive setInterval drifts, and mobile browsers defer callbacks, so
-   clock and countdowns visibly jump together. Each beat is anchored to the
-   second boundary. Deliberately light: displayed values derive from
-   Date.now(), so a late beat still paints the right time — no full rebuild
-   (reconciliation + re-measure churn reads as flashing on slow hardware). */
-let prevBeatTs = 0;
-let worstBeatMs = 0; // device-side timer health, surfaced in the meta line
-function beatAligned() {
-  const now = Date.now();
-  if (prevBeatTs !== 0) worstBeatMs = Math.max(worstBeatMs, now - prevBeatTs);
-  prevBeatTs = now;
-  rowTick();
   tickClock();
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 }
+/* rAF-driven countdown: updates flip text directly from Date.now() every frame.
+   Independent of beat throttling — visual countdown always matches wall time. */
+function flipLoop() {
+  if (!isStale) {
+    for (const r of rowRefs) {
+      const sec = remainingSec(r.msg);
+      if (sec > -120) renderFlips(r.flipsEl, flipString(sec));
+    }
+  }
+  requestAnimationFrame(flipLoop);
+}
+requestAnimationFrame(flipLoop);
 
 /* ---------- dark mode (settings dropdown) ---------- */
 const darkModeToggle = document.getElementById('darkModeToggle');
