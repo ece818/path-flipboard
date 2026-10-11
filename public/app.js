@@ -470,7 +470,12 @@ function rowTick() {
    second boundary. Deliberately light: displayed values derive from
    Date.now(), so a late beat still paints the right time — no full rebuild
    (reconciliation + re-measure churn reads as flashing on slow hardware). */
+let prevBeatTs = 0;
+let worstBeatMs = 0; // device-side timer health, surfaced in the meta line
 function beatAligned() {
+  const now = Date.now();
+  if (prevBeatTs !== 0) worstBeatMs = Math.max(worstBeatMs, now - prevBeatTs);
+  prevBeatTs = now;
   rowTick();
   tickClock();
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
@@ -785,7 +790,7 @@ function renderData(data, normalized) {
     } catch {}
     setMeta(`${data.live ? 'LIVE' : `SNAP ${Math.max(1, Math.round(data.ageMin || 0))}M`}${upd} • ${autoRefresh.checked ? 'AUTO' : 'MANUAL'}`);
   } else {
-    setMeta(`${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`);
+    setMeta(`${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}${worstBeatMs > 2000 ? ` • TIMER MAX ${(worstBeatMs / 1000).toFixed(1)}S` : ''}`);
   }
   if (isStale) {
     setStatus('error', 'STALE');
