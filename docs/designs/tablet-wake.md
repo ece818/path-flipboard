@@ -74,8 +74,11 @@ Decision: keep chrome out of layout flow (no viewport-budget change per `AGENTS.
 - Parse on boot alongside existing `?live=` handling: `new URLSearchParams(location.search).get('theater') === '1'` → after first `loadStation()` paint, call `toggleTheater()`; `requestFullscreen` failure (no gesture — the expected kiosk path) falls into the existing catch → CSS-only `body.theater` + `fitTileStrips()`. Wake is still acquired on the CSS-only fallback path (theater class present → truth table row 1). Coexists with `?live=` (independent params).
 - No new row policy; standard theater rows.
 
-### Idle chrome fade E4 (`public/style.css` + 15-line timer in `app.js`)
-- `body.theater.idle .exit-theater, body.theater.idle .board-topbar { opacity:0; pointer-events:none; }` + `body.theater{cursor:none}` under `.idle`; transition 400ms.
+## Field fixes (post-ship)
+- 2026-10-11 landscape S24U (832×384): fixed tablet sizes regressed normal mode → reverted to fluid clamps.
+- 2026-10-11 landscape theater top-row clip: all trains shared ~220px via `1fr` (26px rows, clipped). Added height-gated 3-row cap `@media (max-height:600px)` — same rule shape as the portrait-phone cap, keyed to height. Overlay geometry checked: no overlap (ends ~y60, board starts ~y78).
+
+### Idle chrome fade E4 (`public/style.css` + 15-line timer in `app.js`)- `body.theater.idle .exit-theater, body.theater.idle .board-topbar { opacity:0; pointer-events:none; }` + `body.theater{cursor:none}` under `.idle`; transition 400ms.
 - Timer: 4s after last `touchstart/mousemove/keydown` in theater → add `.idle`; any such event → remove + reset. Overlay is absolute so fade changes no layout.
 - Exit button remains keyboard-focusable when visible; fade never traps (touch restores). Note: the pill lock-dot fades with the chrome by design at ambient idle; any touch restores proof instantly.
 

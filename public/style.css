@@ -291,6 +291,13 @@ body.theater .row-status .tile > span{padding:0 .03em}
 @media (max-width:700px) and (orientation:landscape){
   body.theater .col-dest{flex-direction:row;align-items:center;gap:2vmin}
 }
+/* short viewports (rotated phones, squat windows): all trains sharing ~220px
+   of row space crush to ~25px rows and clip. Cap theater to the next 3
+   trains — same 3-row rule as portrait phones, keyed to height (the actual
+   constraint) instead of width. fitTileStrips() already skips hidden rows. */
+@media (max-height:600px){
+  body.theater .flap-board .row:nth-child(n+4){display:none}
+}
 /* small exit button — only visible in theater mode, docked directly below the board */
 .exit-theater{display:none;margin:10px auto 0;width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;
   background:rgba(0,0,0,.65);color:var(--muted);border:1px solid #3a3a40;cursor:pointer}
