@@ -49,8 +49,12 @@ function setFlip(el, v) {
   el.querySelector('.f-bottom').textContent = v;
   el.querySelector('.f-leaf-top').textContent = old;
   el.querySelector('.f-leaf-bottom').textContent = v;
+  // Robust restart: remove class, force both layout + style recalc, then add.
+  // On throttled tablets the single reflow trick can be swallowed; this
+  // survives throttling and still shows text immediately if animation drops.
   el.classList.remove('flip-go');
-  void el.offsetWidth; // restart animation
+  el.offsetWidth;              // layout
+  getComputedStyle(el).opacity; // style
   el.classList.add('flip-go');
 }
 function makeColon() {
@@ -134,7 +138,9 @@ function renderTiles(container, text) {
     pending.push(el);
   });
   if (!pending.length) return;
-  void container.offsetWidth; // one reflow restarts every flap in this strip
+  // Robust restart: double recalc survives throttling (same as setFlip).
+  container.offsetWidth;
+  getComputedStyle(container).opacity;
   for (const el of pending) el.classList.add('flip-go');
 }
 
