@@ -186,14 +186,11 @@ function shortDest(text) {
     .slice(0, 12);
 }
 
-/* Route strip shown as tiles right of the destination: line first (never
-   clipped) then direction. Clicking it filters to that line. */
-function routeStr(m) {
-  // Watch: line chip only — the direction already reads in the headsign
-  // ("WORLD TRADE" = to NY) and the full string overflows the round bezel.
-  if (isWatch()) return m.line.short.replace(' (via HOB)', '');
-  const dir = m.dir === 'ToNY' ? 'NEW YORK' : m.dir === 'ToNJ' ? 'NEW JERSEY' : m.dir.toUpperCase();
-  return `${m.line.short} → ${dir}`;
+/* Line chip shown right of the destination (T2 single strip): short line
+   name only — the direction already reads in the headsign. Clicking it
+   filters to that line. */
+function chipLabel(m) {
+  return m.line.short.replace(' (via HOB)', '');
 }
 
 /* ---------- departure wall-clock time (right column) ---------- */
@@ -221,7 +218,7 @@ function departText(d) {
 
 /* ---------- board render ---------- */
 let trains = [];   // flat sorted list
-let rowRefs = [];  // [{row, flipsEl, departsEl, statusEl, destEl, routeEl, msg, key}]
+let rowRefs = [];  // [{row, flipsEl, departsEl, statusEl, destEl, chipEl, msg, key}]
 let lastData = null;
 let isStale = false;
 let loading = false;
@@ -279,8 +276,8 @@ function clearFilter() {
 function visibleKey(m) {
   // Stable identity per train: same physical departure even as countdown ticks.
   // Round departure to the minute so a 15s refresh doesn't look like a new train.
-  // The line is deliberately NOT in the key: when a train's line changes for the
-  // same departure, the row survives and only the route strip flaps.
+  // The line chip is display-only (T2): a line change flaps the chip in place,
+  // never the row — identity stays dir + headsign + minute.
   const depMin = Math.round(departDate(m).getTime() / 60000);
   return `${m.dir}|${m.headSign.toUpperCase()}|${depMin}`;
 }
@@ -330,11 +327,11 @@ function fitTileStrips() {
 function createRow() {
   const row = document.createElement('div');
   row.className = 'row';
-  // Left: departure wall-clock flips. Middle: destination tiles + route
-  // tiles (same size). Right: countdown flips + status.
+  // Left: departure wall-clock flips. Middle: destination tiles + line
+  // chip (same row). Right: countdown flips + status.
   row.innerHTML = `
     <div class="col-time"><div class="departs"></div></div>
-    <div class="col-dest"><div class="dest"></div><div class="route"></div></div>
+    <div class="col-dest"><div class="dest" role="button" tabindex="0"></div><button type="button" class="line-chip"></button></div>
     <div class="status col-due"><div class="flips"></div><div class="row-status hidden"></div></div>`;
   const r = {
     row,
@@ -342,19 +339,24 @@ function createRow() {
     flipsEl: row.querySelector('.flips'),
     statusEl: row.querySelector('.row-status'),
     destEl: row.querySelector('.dest'),
-    routeEl: row.querySelector('.route'),
+    chipEl: row.querySelector('.line-chip'),
     msg: null,
     key: null,
   };
-  // tap destination → filter to that destination; tap route → filter to that line
-  r.destEl.addEventListener('click', () => r.msg && setDestFilter(r.msg.headSign.toUpperCase()));
-  r.routeEl.addEventListener('click', (e) => { e.stopPropagation(); if (r.msg) setLineFilter(r.msg.line.short); });
+  // tap destination → filter to that destination; tap chip → filter to that line
+  const destActivate = () => r.msg && setDestFilter(r.msg.headSign.toUpperCase());
+  r.destEl.addEventListener('click', destActivate);
+  // keyboard parity for the tile strip (T10): Enter/Space activate like tap
+  r.destEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); destActivate(); }
+  });
+  r.chipEl.addEventListener('click', (e) => { e.stopPropagation(); if (r.msg) setLineFilter(r.msg.line.short); });
   return r;
 }
 
 /* Paint one train onto one row. Everything goes through the flip engines, so
    only the characters that actually changed move. */
-function updateRow(r, m, maxDest, maxRoute) {
+function updateRow(r, m, maxDest) {
   r.msg = m;
   r.key = visibleKey(m);
   r.row.style.display = ''; // may have been hidden by the tick after departing
@@ -362,17 +364,30 @@ function updateRow(r, m, maxDest, maxRoute) {
   const st = statusFor(sec);
   r.row.classList.toggle('approach', st.cls === 'approach');
   r.row.classList.toggle('due', st.cls === 'due');
-  r.routeEl.style.setProperty('--c', m.line.color);
+  r.chipEl.style.setProperty('--c', m.line.color);
   renderFlips(r.departsEl, departText(departDate(m)));
-  renderFlips(r.flipsEl, flipString(sec));
-  // Equal-length tile strips: pad destinations and routes to the longest
-  // visible one, so trailing positions render as blank flaps on every row.
+  if (isStale) {
+    // Useful-stale (T4, render-only): frozen last-known wall-clock, greyed
+    // via .stale — remainingSec and the tick stay untouched (R1-A).
+    r.row.classList.add('stale');
+    renderFlips(r.flipsEl, departText(departDate(m)));
+  } else {
+    r.row.classList.remove('stale');
+    renderFlips(r.flipsEl, flipString(sec));
+  }
+  // Single destination strip (T2): full names fit now the route strip is gone.
   renderTiles(r.destEl, shortDest(m.headSign).padEnd(maxDest));
-  renderTiles(r.routeEl, routeStr(m).padEnd(maxRoute));
   r.destEl.title = `Show only ${m.headSign}`;
-  r.destEl.classList.toggle('active', destFilter === m.headSign.toUpperCase());
-  r.routeEl.title = `Show only ${m.line.short}`;
-  r.routeEl.classList.toggle('active', !!lineFilter && lineMatches(m, lineFilter));
+  r.destEl.setAttribute('aria-label', `Show only ${m.headSign} trains`);
+  const destOn = destFilter === m.headSign.toUpperCase();
+  r.destEl.classList.toggle('active', destOn);
+  r.destEl.setAttribute('aria-pressed', destOn ? 'true' : 'false');
+  r.chipEl.textContent = chipLabel(m);
+  r.chipEl.title = `Show only ${m.line.short}`;
+  r.chipEl.setAttribute('aria-label', `Show only ${m.line.short} line trains`);
+  const lineOn = !!lineFilter && lineMatches(m, lineFilter);
+  r.chipEl.classList.toggle('active', lineOn);
+  r.chipEl.setAttribute('aria-pressed', lineOn ? 'true' : 'false');
   renderStatus(r.statusEl, statusLabel(m, st));
 }
 
@@ -385,19 +400,19 @@ function buildBoard(data) {
   const visible = applyFilters(trains).slice(0, 10);
 
   if (!trains.length) {
-    scheduleEl.innerHTML = `<div class="empty">— NO TRAINS REPORTED —</div>`;
+    scheduleEl.innerHTML = `<div class="empty tappable">No trains reported — tap to retry</div>`;
+    scheduleEl.querySelector('.empty').addEventListener('click', () => loadStation(stationSelect.value));
     rowRefs = [];
     return;
   }
   if (!visible.length) {
     const label = lineFilter || destFilter || 'FILTER';
-    scheduleEl.innerHTML = `<div class="empty tappable">— NO ${label} TRAINS — TAP TO CLEAR —</div>`;
+    scheduleEl.innerHTML = `<div class="empty tappable">No ${label} trains — tap to clear</div>`;
     scheduleEl.querySelector('.empty').addEventListener('click', clearFilter);
     rowRefs = [];
     return;
   }
   const maxDest = Math.max(...visible.map(m => shortDest(m.headSign).length));
-  const maxRoute = Math.max(...visible.map(m => routeStr(m).length));
   /* Reconciliation: match live rows to the new train list by identity — order
      doesn't matter — then recycle unmatched rows as shells for new trains.
      Nothing is wiped, so a line/destination change, a re-sort or a new train
@@ -425,18 +440,19 @@ function buildBoard(data) {
   // Attach first: flaps animated while detached never start, and would stick
   // on the old character.
   for (const item of next) scheduleEl.appendChild(item.r.row);
-  for (const item of next) updateRow(item.r, item.m, maxDest, maxRoute);
+  for (const item of next) updateRow(item.r, item.m, maxDest);
   for (const r of spares) r.row.remove();
   rowRefs = next.map(i => i.r);
   fitTileStrips();
 }
 
-/* Tick every second: flip only changed digits, update status text */
+/* Tick every second: flip only changed digits, update status text.
+   Stale gate (R3-A): frozen wall-clock digits persist — only status syncs. */
 setInterval(() => {
   for (const r of rowRefs) {
     const sec = remainingSec(r.msg);
     if (sec <= -120) { r.row.style.display = 'none'; continue; } // departed since render
-    renderFlips(r.flipsEl, flipString(sec));
+    if (!isStale) renderFlips(r.flipsEl, flipString(sec));
     const st = statusFor(sec);
     r.row.classList.toggle('approach', st.cls === 'approach');
     r.row.classList.toggle('due', st.cls === 'due');
@@ -565,7 +581,7 @@ function shapeStationData(code, raw, fetchedVia) {
       messages: dest.messages.map(m => {
         const info = LINE_INFO[m.lineColor.toUpperCase()] || { name: m.headSign, short: m.headSign, color: `#${m.lineColor.split(',')[0]}` };
         return { ...m, line: info, secondsToArrivalNum: parseInt(m.secondsToArrival, 10) };
-      }).sort((a, b) => a.secondsToArrivalNum - b.secondsToArrivalNum),
+      }).filter(m => Number.isFinite(m.secondsToArrivalNum)).sort((a, b) => a.secondsToArrivalNum - b.secondsToArrivalNum),
     })),
   };
 }
@@ -715,10 +731,11 @@ async function loadStation(code, opts = {}) {
     console.error(e);
     // Only wipe to SIGNAL LOST when there's nothing on screen yet.
     if (firstPaint) {
-      alertBox.textContent = `SIGNAL LOST: ${e.message}. Retrying automatically.`;
+      alertBox.textContent = `Signal lost: ${e.message}. Retrying automatically (tap for details).`;
       alertBox.classList.remove('hidden');
       setStatus('error', 'OFFLINE');
-      scheduleEl.innerHTML = `<div class="empty">— SIGNAL LOST —</div>`;
+      scheduleEl.innerHTML = `<div class="empty tappable">Signal lost — tap to retry</div>`;
+      scheduleEl.querySelector('.empty').addEventListener('click', () => loadStation(stationSelect.value));
       rowRefs = [];
     }
   } finally {
@@ -746,11 +763,11 @@ function renderData(data, normalized) {
   }
   if (isStale) {
     setStatus('error', 'STALE');
-    alertBox.textContent = `STALE DATA: live refresh failed and the snapshot is ${Math.round(data.ageMin)} min old — countdowns may read 00 / STALE. Retrying automatically (tap for details).`;
-    alertBox.classList.remove('hidden');
+    // Collapsed alert (D11): pill + meta ("SNAPSHOT nM OLD • UPDATED …")
+    // carry stale state; the box only opens on pill tap for details.
+    if (lastLiveErrors.length) alertBox.dataset.diag = lastLiveErrors.join(' | ');
     delete alertBox.dataset.showDiag;
     delete alertBox.dataset.short;
-    if (lastLiveErrors.length) alertBox.dataset.diag = lastLiveErrors.join(' | ');
   } else {
     delete alertBox.dataset.diag;
     delete alertBox.dataset.showDiag;
@@ -827,6 +844,17 @@ alertBox.addEventListener('click', () => {
 });
 document.querySelectorAll('.badge').forEach(b => {
   b.addEventListener('click', () => setLineFilter(b.dataset.line));
+});
+// Stale details live behind the pill (D11): tap pill to expand/collapse.
+statusPill.style.cursor = 'pointer';
+statusPill.addEventListener('click', () => {
+  if (!isStale) return;
+  if (!alertBox.classList.contains('hidden')) { alertBox.classList.add('hidden'); return; }
+  const d = alertBox.dataset.diag;
+  alertBox.textContent = d
+    ? `Stale data: live refresh failed (${d}) — retrying automatically.`
+    : 'Stale data: showing last-known times — retrying automatically.';
+  alertBox.classList.remove('hidden');
 });
 
 const saved = localStorage.getItem('path:njStation');
