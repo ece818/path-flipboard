@@ -687,9 +687,18 @@ async function fetchLiveRaw() {
 }
 let lastLiveFail = 0;
 let lastLiveErrors = [];
+let lastStatus = null;
 function setStatus(state, text) {
+  // Same-value guard: rewriting pill class/text restarts the lamp pulse
+  // animation and churns slow GPUs every 15s refresh for zero visual gain.
+  const key = state + '|' + text;
+  if (lastStatus === key) return;
+  lastStatus = key;
   statusPill.className = 'board-signal ' + state;
   statusText.textContent = text;
+}
+function setMeta(text) {
+  if (metaLine.textContent !== text) metaLine.textContent = text;
 }
 let timer = null;
 async function loadStation(code, opts = {}) {
@@ -705,7 +714,7 @@ async function loadStation(code, opts = {}) {
     setStatus('loading', 'SYNC');
     if (firstPaint) {
       alertBox.classList.add('hidden');
-      metaLine.textContent = `SYNCING ${STATION_NAMES[normalized] || normalized}…`;
+      setMeta(`SYNCING ${STATION_NAMES[normalized] || normalized}…`);
     }
   }
   try {
@@ -742,7 +751,7 @@ async function loadStation(code, opts = {}) {
         } else if (!background) {
           // Manual refresh with live down: keep the current board, surface a
           // one-line note instead of wiping to an error state.
-          metaLine.textContent = `${metaLine.textContent} • LIVE RETRY SOON`;
+          setMeta(`${metaLine.textContent} • LIVE RETRY SOON`);
         }
         // Background refresh with live down: leave board/status/alert exactly
         // as they are — silent retry next tick, zero flicker.
@@ -778,9 +787,9 @@ function renderData(data, normalized) {
       upd = ' ' + new Date(data.lastUpdated).toLocaleTimeString('en-US',
         { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
     } catch {}
-    metaLine.textContent = `${data.live ? 'LIVE' : `SNAP ${Math.max(1, Math.round(data.ageMin || 0))}M`}${upd} • ${autoRefresh.checked ? 'AUTO' : 'MANUAL'}`;
+    setMeta(`${data.live ? 'LIVE' : `SNAP ${Math.max(1, Math.round(data.ageMin || 0))}M`}${upd} • ${autoRefresh.checked ? 'AUTO' : 'MANUAL'}`);
   } else {
-    metaLine.textContent = `${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`;
+    setMeta(`${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}`);
   }
   if (isStale) {
     setStatus('error', 'STALE');
