@@ -467,15 +467,11 @@ function rowTick() {
 /* Beat scheduler: countdowns and header clock advance on one wall-clock
    beat. Naive setInterval drifts, and mobile browsers defer callbacks, so
    clock and countdowns visibly jump together. Each beat is anchored to the
-   second boundary; after a >2.5s gap (missed beats) repaint fully so the
-   board resyncs instantly instead of stepping. */
-let lastBeat = 0;
+   second boundary. Deliberately light: displayed values derive from
+   Date.now(), so a late beat still paints the right time — no full rebuild
+   (reconciliation + re-measure churn reads as flashing on slow hardware). */
 function beatAligned() {
-  const now = Date.now();
-  const missed = lastBeat !== 0 && now - lastBeat > 2500;
-  lastBeat = now;
-  if (missed && lastData) buildBoard(lastData); // resync: full repaint, not a step
-  else rowTick();
+  rowTick();
   tickClock();
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 }
