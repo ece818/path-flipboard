@@ -302,9 +302,6 @@ function visibleKey(m) {
 function fitTileStrips() {
   if (!document.body.classList.contains('theater') || !rowRefs.length) return;
   const board = scheduleEl;
-  board.style.removeProperty('--tile-fit');
-  board.style.removeProperty('--flip-fit');
-  board.style.removeProperty('--colon-fit');
   const cd = rowRefs.map(r => r.row.querySelector('.col-dest')).find(el => el && el.clientWidth > 0);
   if (!cd) return;
   const row = cd.closest('.row');
@@ -315,18 +312,23 @@ function fitTileStrips() {
   if (!tile0 || !flip0) return;
   let avail = cd.clientWidth;
   let content = cd.scrollWidth;
-  if (content <= avail + 1) return; // fits at design size — route already pinned right
+  if (content <= avail + 1) return; // fits at design size — route already pinned right, no scaling needed
+  // Only touch CSS vars when we actually scale; avoids remove+set churn on desktop theater
   let s = avail / content;
   let prevRatio = 0;
   for (let i = 0; i < 8; i++) {
-    board.style.setProperty('--tile-fit', (tile0 * s).toFixed(1) + 'px');
-    board.style.setProperty('--flip-fit', (flip0 * s).toFixed(1) + 'px');
-    if (colon0) board.style.setProperty('--colon-fit', (colon0 * s).toFixed(1) + 'px');
+    const tileVal = (tile0 * s).toFixed(1) + 'px';
+    const flipVal = (flip0 * s).toFixed(1) + 'px';
+    const colonVal = colon0 ? (colon0 * s).toFixed(1) + 'px' : null;
+    // Only write if changed — avoids style recalc churn that kills flip animation
+    if (board.style.getPropertyValue('--tile-fit') !== tileVal) board.style.setProperty('--tile-fit', tileVal);
+    if (board.style.getPropertyValue('--flip-fit') !== flipVal) board.style.setProperty('--flip-fit', flipVal);
+    if (colonVal && board.style.getPropertyValue('--colon-fit') !== colonVal) board.style.setProperty('--colon-fit', colonVal);
     avail = cd.clientWidth;
     content = cd.scrollWidth;
-    if (content <= avail && content >= avail * 0.96) return; // strip fills ~96-100%
+    if (content <= avail && content >= avail * 0.96) return;
     const ratio = content / avail;
-    if (Math.abs(ratio - prevRatio) < 0.002) return; // font floors locked it — stop stepping
+    if (Math.abs(ratio - prevRatio) < 0.002) return;
     prevRatio = ratio;
     s = Math.min(1, Math.max(0.15, s * (avail / content) ** 0.9));
   }
