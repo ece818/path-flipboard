@@ -97,12 +97,17 @@ button{
 }
 button:hover{border-color:var(--amber)}
 .auto{font-size:12px;letter-spacing:.15em;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.auto[hidden]{display:none} /* author display:flex beats UA [hidden] */
 .auto input{accent-color:var(--amber)}
 .board-signal{display:flex;gap:8px;align-items:center;font-size:12px;letter-spacing:.2em;color:var(--green);
   border:1px solid #3a3a40;border-radius:6px;padding:9px 12px;background:#000}
 .board-signal .lamp{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
 .board-signal.loading{color:var(--amber)} .board-signal.loading .lamp{background:var(--amber);box-shadow:0 0 10px var(--amber)}
 .board-signal.error{color:var(--red)} .board-signal.error .lamp{background:var(--red);box-shadow:0 0 10px var(--red)}
+/* wake-lock proof dot: lit while the screen lock is held, hidden otherwise
+   and always hidden where Wake Lock is unsupported (silent-hide) */
+.lockdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.lockdot[hidden]{display:none}
 @keyframes pulse{50%{opacity:.4}}
 
 .board-meta{color:var(--muted);font-size:12px;letter-spacing:.12em;margin:2px 0 12px}
@@ -223,6 +228,19 @@ button:hover{border-color:var(--amber)}
 .empty.tappable{cursor:pointer;min-height:var(--tap);display:grid;place-items:center}
 .empty.tappable:hover{color:var(--amber)}
 
+/* tablet 701–1100px: between phone stacking and desktop spread. Strips stay
+   horizontal, digits/tiles step down one notch from desktop. This block lives
+   BEFORE the body.theater overrides so theater rules (later, equal-or-higher
+   specificity) always win. */
+@media (min-width:701px) and (max-width:1100px){
+  .station-shell{max-width:960px}
+  .row{padding:10px 14px}
+  .flip{font-size:22px}
+  .status .flip{font-size:34px}
+  .col-time .flip{font-size:22px}
+  .tile{font-size:14px}
+  .col-dest{flex-direction:row}
+}
 /* theater / focus mode — flipboards + clock title bar on top */
 body.theater{background:#000}
 body.theater .station-shell{max-width:none;padding:8px}
@@ -233,6 +251,20 @@ body.theater .filter-bar,
 body.theater .board-head-row,
 body.theater .board-foot,
 body.theater .fallback{display:none}
+/* stay-awake overlay: the toggle + pill are invisible under the hide above,
+   exactly when the wall needs them. Exempt ONLY them as a floating overlay —
+   position:fixed keeps them out of layout flow, so viewport-fill math and
+   fitTileStrips() are untouched. */
+body.theater .board-topbar{display:flex;position:fixed;top:8px;right:8px;z-index:5;
+  background:rgba(0,0,0,.55);border-radius:8px;padding:4px 8px;margin:0;flex-wrap:nowrap}
+body.theater .board-topbar > :not(.board-actions):not(.board-signal){display:none}
+body.light.theater .board-topbar{background:rgba(0,0,0,.55)}
+/* idle chrome fade: cursor + exit button + overlay fade after 4s idle in
+   theater; any touch/mouse/key restores (pokeIdle). The pill lock-dot fades
+   with the chrome by design at ambient idle. */
+body.theater .board-topbar,body.theater .exit-theater{transition:opacity .4s}
+body.theater.idle{cursor:none}
+body.theater.idle .board-topbar,body.theater.idle .exit-theater{opacity:0;pointer-events:none}
 body.theater .station-head{justify-content:center;margin-bottom:8px}
 body.theater .head-clock{text-align:center}
 body.theater .clock-label{text-align:center}

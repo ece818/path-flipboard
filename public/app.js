@@ -792,17 +792,82 @@ stationSelect.addEventListener('change', () => {
 });
 refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
 autoRefresh.addEventListener('change', () => { localStorage.setItem('path:autoRefresh', autoRefresh.checked ? '1' : '0'); scheduleAuto(); });
+const keepAwakeBox = document.getElementById('keepAwake');
+const lockDot = document.getElementById('lockDot');
+/* Stay-awake: screen Wake Lock held while visible AND (theater OR keepAwake).
+   Truth table: theater on → HELD; theater off + keepAwake on → HELD; else
+   released. Pill/lock-dot writes happen ONLY here (wake transitions) — never
+   on the refresh path (anti-flicker contract). Unsupported → silent-hide. */
+let wakeLock = null;
+let wakeLockUnsupported = false;
+let keepAwake = false;
+try { keepAwake = localStorage.getItem('path:keepAwake') === '1'; } catch {}
+if (!('wakeLock' in navigator)) wakeLockUnsupported = true; // silent-hide from first paint
+function wallActive() {
+  return document.body.classList.contains('theater') || keepAwake;
+}
+function syncWakeUI(held) {
+  if (keepAwakeBox) keepAwakeBox.closest('label').hidden = wakeLockUnsupported;
+  if (lockDot) lockDot.hidden = wakeLockUnsupported || !held;
+}
+async function acquireWake() {
+  if (wakeLock || wakeLockUnsupported) return;
+  if (!('wakeLock' in navigator)) { wakeLockUnsupported = true; syncWakeUI(false); return; }
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', onWakeRelease);
+    syncWakeUI(true);
+  } catch {
+    // denied / insecure context / transient: hide silently (E6 skip)
+    wakeLock = null;
+    wakeLockUnsupported = true;
+    syncWakeUI(false);
+  }
+}
+function onWakeRelease() {
+  // OS revoked the lock (common tablet case): re-acquire while wall-active
+  wakeLock = null;
+  if (document.visibilityState === 'visible' && wallActive()) acquireWake();
+  else syncWakeUI(false);
+}
+async function releaseWake() {
+  if (wakeLock) {
+    try { await wakeLock.release(); } catch {}
+    wakeLock = null;
+  }
+  syncWakeUI(false);
+}
+function evalWake() {
+  if (document.visibilityState === 'visible' && wallActive()) acquireWake();
+  else releaseWake();
+}
+/* Idle chrome fade in theater: cursor + exit button + topbar overlay fade
+   after 4s idle; any touch/mouse/key restores. Never traps (touch restores). */
+let idleTimer = null;
+function pokeIdle() {
+  if (!document.body.classList.contains('theater')) return;
+  document.body.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (document.body.classList.contains('theater')) document.body.classList.add('idle');
+  }, 4000);
+}
+['touchstart', 'mousemove', 'keydown'].forEach(ev => document.addEventListener(ev, pokeIdle, { passive: true }));
 /* Fullscreen focus mode — just the flipboards */
 async function toggleTheater() {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await document.documentElement.requestFullscreen();
+    // success path: 'fullscreenchange' below applies theater class + wake
   } catch {
-    // Fullscreen API unavailable (e.g. iframe) — fall back to CSS-only focus
+    // Fullscreen API unavailable (e.g. iframe) or no gesture (kiosk boot) —
+    // fall back to CSS-only focus
     const on = document.body.classList.toggle('theater');
     fsBtn.textContent = on ? '✕' : '⛶';
     fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
     fitTileStrips();
+    evalWake();
+    pokeIdle();
   }
 }
 document.addEventListener('fullscreenchange', () => {
@@ -811,7 +876,22 @@ document.addEventListener('fullscreenchange', () => {
   fsBtn.textContent = on ? '✕' : '⛶';
   fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
   fitTileStrips();
+  evalWake();
+  pokeIdle();
 });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { evalWake(); pokeIdle(); }
+});
+if (keepAwakeBox) {
+  keepAwakeBox.checked = keepAwake;
+  syncWakeUI(false);
+  keepAwakeBox.addEventListener('change', () => {
+    keepAwake = keepAwakeBox.checked;
+    try { localStorage.setItem('path:keepAwake', keepAwake ? '1' : '0'); } catch {}
+    evalWake();
+  });
+  evalWake(); // honor a persisted toggle from boot (no gesture needed)
+}
 // rotate / resize while fullscreen: strips must re-fit the new width
 let fitTimer = null;
 window.addEventListener('resize', () => {
@@ -868,3 +948,8 @@ updateFilterUI();
 
 loadStation(stationSelect.value);
 scheduleAuto();
+// kiosk boot: ?theater=1 mounts straight into wall mode. Fullscreen without
+// a gesture falls into toggleTheater's catch → CSS-only theater + wake.
+try {
+  if (new URLSearchParams(location.search).get('theater') === '1' && !document.body.classList.contains('theater')) toggleTheater();
+} catch {}

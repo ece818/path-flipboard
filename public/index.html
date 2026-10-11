@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NJ PATH — Departures</title>
-  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="style.css?v=28" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -67,8 +67,9 @@
           <button id="refreshBtn" title="Refresh">↻</button>
           <button id="fsBtn" title="Fullscreen — just the board">⛶</button>
           <label class="auto"><input type="checkbox" id="autoRefresh" checked> AUTO 15s</label>
+          <label class="auto"><input type="checkbox" id="keepAwake"> KEEP AWAKE</label>
         </div>
-        <div class="board-signal" id="statusPill"><span class="lamp"></span><span id="statusText">LIVE</span></div>
+        <div class="board-signal" id="statusPill"><span class="lamp"></span><span id="statusText">LIVE</span><span class="lockdot" id="lockDot" hidden title="Screen stays on"></span></div>
       </div>
 
       <div class="board-meta" id="metaLine">Warming up the flaps…</div>
@@ -105,6 +106,6 @@
     </details>
   </div>
 
-  <script src="app.js?v=27" type="module"></script>
+  <script src="app.js?v=28" type="module"></script>
 </body>
 </html>
