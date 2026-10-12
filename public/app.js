@@ -134,9 +134,6 @@ function renderTiles(container, text) {
   chars.forEach((ch, i) => {
     const el = tiles[i];
     if (!el) return;
-    // Word spaces are plain gaps, not flap boxes: a blank flap shows only
-    // the seam line and reads as a broken tile.
-    el.classList.toggle('gap', ch === '\u00A0');
     if (el.dataset.v === ch) return;
     const old = el.dataset.v ?? ch;
     el.dataset.v = ch;
