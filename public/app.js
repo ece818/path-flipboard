@@ -369,7 +369,7 @@ function createRow() {
 
 /* Paint one train onto one row. Everything goes through the flip engines, so
    only the characters that actually changed move. */
-function updateRow(r, m) {
+function updateRow(r, m, maxDest) {
   r.msg = m;
   r.key = visibleKey(m);
   r.row.style.display = ''; // may have been hidden by the tick after departing
@@ -388,10 +388,9 @@ function updateRow(r, m) {
     r.row.classList.remove('stale');
     renderFlips(r.flipsEl, flipString(sec));
   }
-  // Single destination strip (T2): natural length — no trailing pad runs.
-  // (padEnd was tried; the blank tail flaps showed bare seams and read as
-  // broken tiles. Between-word spaces stay real blank flaps.)
-  renderTiles(r.destEl, shortDest(m.headSign));
+  // Single destination strip (T2): padded to the longest visible row, like a
+  // real split-flap board — fixed flap count, new words swap into the slots.
+  renderTiles(r.destEl, shortDest(m.headSign).padEnd(maxDest));
   r.destEl.title = `Show only ${m.headSign}`;
   r.destEl.setAttribute('aria-label', `Show only ${m.headSign} trains`);
   const destOn = destFilter === m.headSign.toUpperCase();
@@ -413,6 +412,10 @@ function buildBoard(data) {
   trains = trains.filter(m => remainingSec(m) > -120);
   trains.sort((a, b) => remainingSec(a) - remainingSec(b));
   const visible = applyFilters(trains).slice(0, 10);
+
+  // Fixed flap count per board: every strip pads to the longest destination,
+  // so a new train swaps letters into the same slots instead of resizing.
+  const maxDest = Math.max(...visible.map(m => shortDest(m.headSign).length));
 
   if (!trains.length) {
     scheduleEl.innerHTML = `<div class="empty tappable">No trains reported — tap to retry</div>`;
@@ -454,7 +457,7 @@ function buildBoard(data) {
   // Attach first: flaps animated while detached never start, and would stick
   // on the old character.
   for (const item of next) scheduleEl.appendChild(item.r.row);
-  for (const item of next) updateRow(item.r, item.m);
+  for (const item of next) updateRow(item.r, item.m, maxDest);
   for (const r of spares) r.row.remove();
   rowRefs = next.map(i => i.r);
   fitTileStrips();
@@ -989,6 +992,14 @@ watchMQ.addEventListener('change', () => {
 });
 fsBtn.addEventListener('click', toggleTheater);
 document.getElementById('exitTheater').addEventListener('click', toggleTheater);
+// "f" enters/exits fullscreen — ignored while typing in a form control.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'f' && e.key !== 'F') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target && e.target.closest && e.target.closest('select,input,textarea')) return;
+  e.preventDefault();
+  toggleTheater();
+});
 clearFilterBtn.addEventListener('click', clearFilter);
 alertBox.style.cursor = 'pointer';
 alertBox.addEventListener('click', () => {
