@@ -876,17 +876,16 @@ refreshBtn.addEventListener('click', () => loadStation(stationSelect.value));
 autoRefresh.addEventListener('change', () => { localStorage.setItem('path:autoRefresh', autoRefresh.checked ? '1' : '0'); scheduleAuto(); });
 const keepAwakeBox = document.getElementById('keepAwake');
 const lockDot = document.getElementById('lockDot');
-/* Stay-awake: screen Wake Lock held while visible AND (theater OR keepAwake).
-   Truth table: theater on → HELD; theater off + keepAwake on → HELD; else
-   released. Pill/lock-dot writes happen ONLY here (wake transitions) — never
-   on the refresh path (anti-flicker contract). Unsupported → silent-hide. */
+/* Stay-awake: the keepAwake toggle is the single control. Entering theater
+   switches it on (fullscreen implies stay-awake); the user can switch it
+   off anywhere, any time. Unsupported browsers hide it silently. */
 let wakeLock = null;
 let wakeLockUnsupported = false;
 let keepAwake = false;
 try { keepAwake = localStorage.getItem('path:keepAwake') === '1'; } catch {}
 if (!('wakeLock' in navigator)) wakeLockUnsupported = true; // silent-hide from first paint
 function wallActive() {
-  return document.body.classList.contains('theater') || keepAwake;
+  return keepAwake;
 }
 function syncWakeUI(held) {
   if (keepAwakeBox) keepAwakeBox.closest('label').hidden = wakeLockUnsupported;
@@ -923,6 +922,12 @@ function evalWake() {
   if (document.visibilityState === 'visible' && wallActive()) acquireWake();
   else releaseWake();
 }
+function setKeepAwake(on) {
+  keepAwake = !!on;
+  if (keepAwakeBox) keepAwakeBox.checked = keepAwake;
+  try { localStorage.setItem('path:keepAwake', keepAwake ? '1' : '0'); } catch {}
+  evalWake();
+}
 /* Idle chrome fade in theater: cursor + exit button + topbar overlay fade
    after 4s idle; any touch/mouse/key restores. Never traps (touch restores). */
 let idleTimer = null;
@@ -948,7 +953,8 @@ async function toggleTheater() {
     fsBtn.textContent = on ? '✕' : '⛶';
     fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
     fitTileStrips();
-    evalWake();
+    if (on) setKeepAwake(true); // fullscreen implies stay-awake
+    else evalWake();
     pokeIdle();
   }
 }
@@ -958,7 +964,8 @@ document.addEventListener('fullscreenchange', () => {
   fsBtn.textContent = on ? '✕' : '⛶';
   fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
   fitTileStrips();
-  evalWake();
+  if (on) setKeepAwake(true); // fullscreen implies stay-awake
+  else evalWake();
   pokeIdle();
 });
 document.addEventListener('visibilitychange', () => {
@@ -967,11 +974,7 @@ document.addEventListener('visibilitychange', () => {
 if (keepAwakeBox) {
   keepAwakeBox.checked = keepAwake;
   syncWakeUI(false);
-  keepAwakeBox.addEventListener('change', () => {
-    keepAwake = keepAwakeBox.checked;
-    try { localStorage.setItem('path:keepAwake', keepAwake ? '1' : '0'); } catch {}
-    evalWake();
-  });
+  keepAwakeBox.addEventListener('change', () => setKeepAwake(keepAwakeBox.checked));
   evalWake(); // honor a persisted toggle from boot (no gesture needed)
 }
 // rotate / resize while fullscreen: strips must re-fit the new width
