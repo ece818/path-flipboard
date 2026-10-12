@@ -468,10 +468,24 @@ function buildBoard(data) {
    stay smooth even when the beat callback is throttled to 2s+. */
 let prevBeatTs = 0;
 let worstBeatMs = 0;
+let beatCount = 0;
+let rafFrames = 0;
+let rafFps = 0;
+let rafWindowTs = Date.now();
+let diagBox = null;
+const BUILD = 'v44';
+try {
+  if (new URLSearchParams(location.search).get('diag') === '1') {
+    diagBox = document.createElement('div');
+    diagBox.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99;pointer-events:none;font:11px/1.5 monospace;color:#0f0;background:rgba(0,0,0,.75);padding:6px 8px;border-radius:6px;white-space:pre';
+    document.body.appendChild(diagBox);
+  }
+} catch {}
 function beatAligned() {
   const now = Date.now();
   if (prevBeatTs !== 0) worstBeatMs = Math.max(worstBeatMs, now - prevBeatTs);
   prevBeatTs = now;
+  beatCount++;
   for (const r of rowRefs) {
     const sec = remainingSec(r.msg);
     if (sec <= -120) { r.row.style.display = 'none'; continue; }
@@ -482,6 +496,10 @@ function beatAligned() {
   }
   tickClock();
   fireFlips(); // one reflow for every armed restart this beat
+  if (diagBox) {
+    const lockState = wakeLock ? 'HELD' : (wakeLockUnsupported ? 'N/A' : 'off');
+    diagBox.textContent = `${BUILD} beats:${beatCount} worst:${(worstBeatMs / 1000).toFixed(1)}s rAF:${rafFps}fps vis:${document.visibilityState} lock:${lockState} rows:${rowRefs.length} stale:${isStale}`;
+  }
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 }
 /* rAF-driven countdown: updates flip text directly from Date.now() every frame.
@@ -493,6 +511,13 @@ function flipLoop() {
       if (sec > -120) renderFlips(r.flipsEl, flipString(sec));
     }
     fireFlips(); // no-op on frames where nothing changed
+  }
+  rafFrames++;
+  const now = Date.now();
+  if (now - rafWindowTs >= 1000) {
+    rafFps = Math.round((rafFrames * 1000) / Math.max(1, now - rafWindowTs));
+    rafFrames = 0;
+    rafWindowTs = now;
   }
   requestAnimationFrame(flipLoop);
 }
