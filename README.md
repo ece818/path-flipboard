@@ -64,11 +64,19 @@ built-in proxy (`server.js`), which fetches PANYNJ server-side to avoid CORS
 and adds 15s caching.
 
 
-Pick a station from the dropdown → cards for **To New York** and **To New Jersey** appear with:
-- headsign / line color (NWK-WTC red, JSQ-33 orange, HOB-33 blue, HOB-WTC green, JSQ-33 via HOB orange/blue)
-- countdown (`4m 12s`, `Due`) ticking every second
-- `arrivalTimeMessage` from PANYNJ + `secondsToArrival`
-- auto-refresh every 15s (toggleable), last updated in `America/New_York`
+Pick a station from the dropdown (New Jersey + New York stations) → rows appear with:
+- departure wall-clock in split-flap digits (left), destination in letter tiles (middle), live countdown in large flip digits (right)
+- line chip tinted per line (NWK-WTC red, JSQ-33 orange, HOB-33 blue, HOB-WTC green); tap a destination to filter by it, tap a chip (or footer badge) to filter by line
+- status under the countdown: `BOARDING` (≤30s), `APPROACHING` (<2 min), `STALE` when live is down and the snapshot is over 10 min old
+- countdowns tick every second client-side from `lastUpdated + secondsToArrival`; departed trains auto-hide; auto-refresh every 15s (toggleable); times in `America/New_York`
+- appearance: dark mode (default) with toggle in the ⚙ menu, 12/24-hour clock toggle
+
+## Wall display (fullscreen theater)
+
+Hit ⛶ (or open with `?theater=1` for mount-and-forget kiosk boot) for a fullscreen board that fills the viewport and scales rows to fit — built for a wall-mounted tablet:
+- KEEP AWAKE toggle uses the screen Wake Lock API so the display never sleeps; entering fullscreen switches it on automatically, and it persists across visits. Where the API is missing (older browsers) the toggle hides itself silently.
+- short viewports (rotated phones) show the next 3 trains so rows keep full height; tablets and wide screens get stepped-up digit sizes.
+- if the GPU can't hold frame rate, the board trips a `lowfx` mode (instant digit swaps, no glow) automatically; `?diag=1` shows a field readout (beats, worst gap, fps, lock state).
 
 ## API (served by `server.js`)
 
@@ -84,11 +92,12 @@ Cache: 15s in-memory (`server.js:43`).
 
 ## Frontend
 
-- `public/index.html:16` – station `<select>`
-- `public/app.js:36` – `render()` + `formatCountdown()` + 1s ticker
-- `public/style.css` – PATH-themed dark UI
+- `public/index.html` – station `<select>`, board frame, theater exit button, settings menu
+- `public/app.js` – split-flap engine (`renderFlips`/`renderTiles`), wall-clock beat scheduler plus `requestAnimationFrame` countdown loop, 15s background auto-refresh, Wake Lock stay-awake, `?theater=1` / `?live=` / `?diag=1` params
+- `public/style.css` – PATH-themed dark UI (+ light theme), mobile ≤700px rules, theater viewport-fill mode
+- Verify frontend edits with `node --check public/app.js` (no test suite); bump `?v=` on both the `<link>` and `<script>` tags in `index.html` with every CSS/JS change
 
 ## Deploy
 
 - Any Node host (Render, Fly, Codespaces): `PORT=3000 npm start`
-- Static fallback: `public/` can be served alone, but realtime will show offline message and fallback timetable until you point it at a proxy.
+- Static fallback: `public/` can be served alone; without a proxy the board paints the snapshot, shows `STALE` once it ages past 10 min, and lists typical weekday intervals in the fallback details until live data arrives.
