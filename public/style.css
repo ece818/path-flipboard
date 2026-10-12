@@ -207,6 +207,8 @@ button:hover{border-color:var(--amber)}
 /* leaves must stay opaque while they swing, or the static glyph shows through */
 .tile .f-leaf{background:inherit}
 .tile .f-top,.tile .f-leaf-top{line-height:1.6em}
+/* blank flaps: no text glow (shadow of invisible ink washes the tile grey) */
+.tile.sp,.tile.sp > span{text-shadow:none}
 @keyframes tileIn{from{transform:rotateX(-80deg);opacity:0}to{transform:rotateX(0);opacity:1}}
 
 /* footer */

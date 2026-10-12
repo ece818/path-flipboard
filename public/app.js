@@ -134,6 +134,9 @@ function renderTiles(container, text) {
   chars.forEach((ch, i) => {
     const el = tiles[i];
     if (!el) return;
+    // Blank flaps carry no glow: text-shadow on invisible ink paints a flat
+    // grey wash that reads as a different component. Kill it on spaces.
+    el.classList.toggle('sp', ch === '\u00A0');
     if (el.dataset.v === ch) return;
     const old = el.dataset.v ?? ch;
     el.dataset.v = ch;
