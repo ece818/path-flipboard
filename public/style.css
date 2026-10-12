@@ -371,6 +371,17 @@ body.theater .exit-theater{display:block}
   .foot-note{font-size:10px;margin-left:0;flex-basis:100%}
 }
 
+/* lowfx: measured <25fps sustained — weak GPU gets instant swaps, no glow.
+   Tripped adaptively (tablet diag: 11fps with healthy beats). One-way per
+   session. Leaves hidden (a static old-char leaf would ghost over new text);
+   glow and blurred shadows off (the mobile GPU killers); state colors stay. */
+body.lowfx .flip span,body.lowfx .tile{text-shadow:none}
+body.lowfx .f-leaf{display:none}
+body.lowfx .flap-board,body.lowfx .board-frame{box-shadow:none}
+body.lowfx .row,body.lowfx .row.approach,body.lowfx .row.due{box-shadow:none}
+body.lowfx .flip.flip-go .f-leaf-top,body.lowfx .tile.flip-go .f-leaf-top,
+body.lowfx .flip.flip-go .f-leaf-bottom,body.lowfx .tile.flip-go .f-leaf-bottom{animation:none}
+
 /* desktop theater: viewport wide enough that middle strip never squeezes.
    Disable container-query scaling and the CSS vars entirely — avoids any
    style recalc on the flip elements from var(--flip-fit) access. */

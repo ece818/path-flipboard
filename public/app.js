@@ -472,8 +472,9 @@ let beatCount = 0;
 let rafFrames = 0;
 let rafFps = 0;
 let rafWindowTs = Date.now();
+let lowFxBad = 0;
 let diagBox = null;
-const BUILD = 'v44';
+const BUILD = 'v45';
 try {
   if (new URLSearchParams(location.search).get('diag') === '1') {
     diagBox = document.createElement('div');
@@ -498,7 +499,7 @@ function beatAligned() {
   fireFlips(); // one reflow for every armed restart this beat
   if (diagBox) {
     const lockState = wakeLock ? 'HELD' : (wakeLockUnsupported ? 'N/A' : 'off');
-    diagBox.textContent = `${BUILD} beats:${beatCount} worst:${(worstBeatMs / 1000).toFixed(1)}s rAF:${rafFps}fps vis:${document.visibilityState} lock:${lockState} rows:${rowRefs.length} stale:${isStale}`;
+    diagBox.textContent = `${BUILD} beats:${beatCount} worst:${(worstBeatMs / 1000).toFixed(1)}s rAF:${rafFps}fps vis:${document.visibilityState} lock:${lockState} rows:${rowRefs.length} stale:${isStale}${document.body.classList.contains('lowfx') ? ' LOWFX' : ''}`;
   }
   setTimeout(beatAligned, 1000 - (Date.now() % 1000) + 5);
 }
@@ -518,6 +519,15 @@ function flipLoop() {
     rafFps = Math.round((rafFrames * 1000) / Math.max(1, now - rafWindowTs));
     rafFrames = 0;
     rafWindowTs = now;
+    // Adaptive quality: sustained <25fps means the GPU can't composite the
+    // glow + 3D leaves (tablet diag read 11fps with healthy 1.4s beats).
+    // One-way trip to instant swaps for the session — no oscillation.
+    if (rafFps < 25) {
+      lowFxBad++;
+      if (lowFxBad >= 5) document.body.classList.add('lowfx');
+    } else {
+      lowFxBad = 0;
+    }
   }
   requestAnimationFrame(flipLoop);
 }

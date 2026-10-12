@@ -78,6 +78,7 @@ Decision: keep chrome out of layout flow (no viewport-budget change per `AGENTS.
 - 2026-10-11 landscape S24U (832×384): fixed tablet sizes regressed normal mode → reverted to fluid clamps.
 - 2026-10-11 landscape theater top-row clip: all trains shared ~220px via `1fr` (26px rows, clipped). Added height-gated 3-row cap `@media (max-height:600px)` — same rule shape as the portrait-phone cap, keyed to height. Overlay geometry checked: no overlap (ends ~y60, board starts ~y78).
 - 2026-10-11 Tab A landscape too small: fluid type capped out (38px flips) with headroom to spare. Added `@media (min-width:1100px)` step-up: shell 1100, flanks 220px, flips to 52px / countdown 62px / tiles 28px.
+- 2026-10-12 diag verdict (beats 1.4s worst, rAF 11fps): timers healthy, GPU starved. Added adaptive `lowfx` (5× sub-25fps windows → instant swaps, no glow/leaves/shadows, one-way per session) + `?diag=1` flight recorder (beats/worst/rAF/vis/lock/rows/stale).
 
 ### Idle chrome fade E4 (`public/style.css` + 15-line timer in `app.js`)- `body.theater.idle .exit-theater, body.theater.idle .board-topbar { opacity:0; pointer-events:none; }` + `body.theater{cursor:none}` under `.idle`; transition 400ms.
 - Timer: 4s after last `touchstart/mousemove/keydown` in theater → add `.idle`; any such event → remove + reset. Overlay is absolute so fade changes no layout.
