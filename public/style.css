@@ -317,7 +317,10 @@ body.theater .flips,body.theater .departs{gap:.5vmin}
    rotated phone) with no gap-size guessing */
 body.theater .col-dest{gap:2vmin;justify-content:space-between}
 body.theater .dest,body.theater .line-chip{flex:0 0 auto}
-body.theater .line-chip{font-size:clamp(11px,2vmin,24px)}
+/* departure digits and line name share one size in fullscreen: the chip
+   tracks the exact same expression as the flank flips (same row unit +
+   same fitTileStrips var), so they grow and shrink in lockstep */
+body.theater .line-chip{font-size:clamp(20px,4.5vmin,64px);font-size:max(20px,min(var(--flip-fit,9999px),52cqh,11vmin,5vw));padding:.08em .45em;border-radius:.15em}
 /* letter tiles ~0.57× flip size (same row unit → strips match digit height);
    padding widens them without growing height; fitTileStrips() in app.js
    scales --tile-fit/--flip-fit/--colon-fit TOGETHER when the strip would
@@ -411,6 +414,7 @@ body.lowfx .flip.flip-go .f-leaf-bottom,body.lowfx .tile.flip-go .f-leaf-bottom{
 @media (min-width:1100px){
   body.theater .flip{font-size:clamp(20px,4.5vmin,64px)}
   body.theater .colon{font-size:clamp(18px,3.8vmin,54px)}
+  body.theater .line-chip{font-size:clamp(20px,4.5vmin,64px)}
 }
 
 /* ---- light theme (dark mode off) ---- */
@@ -555,6 +559,9 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
     padding:1.2vmin 1.8vmin;gap:1.5vmin;container-type:normal}
   body.theater .col-dest{flex-direction:column;align-items:stretch;justify-content:center;gap:1vmin}
   body.theater .dest,body.theater .line-chip{flex:0 1 auto}
+  /* round face keeps its own compact chip: rows are container-type:normal
+     here so the fullscreen cqh expression would resolve too large */
+  body.theater .line-chip{font-size:3.4vmin;padding:1vmin 2vmin}
   body.theater .flip{font-size:max(13px,min(var(--flip-fit,9999px),6vmin))}
   body.theater .colon{font-size:max(11px,min(var(--colon-fit,9999px),5vmin))}
   body.theater .tile{font-size:max(10px,min(var(--tile-fit,9999px),4vmin));min-width:.66em}
