@@ -381,10 +381,13 @@ function updateRow(r, m, maxDest) {
   r.row.classList.toggle('approach', st.cls === 'approach');
   r.row.classList.toggle('due', st.cls === 'due');
   r.chipEl.style.setProperty('--c', m.line.color);
-  /* Line Band (approved B): the row itself carries the line color so the
+  /* Line Band (approved B): the row itself carries the band color so the
      whole row reads as one band. Same per-paint write path as the chip —
-     no pill/meta/alert touched, anti-flicker contract holds. */
-  r.row.style.setProperty('--c', m.line.color);
+     no pill/meta/alert touched, anti-flicker contract holds.
+     Newark/WTC trains ride a black band instead of red; the chip keeps
+     the red so line identity and filter affordance survive. */
+  const bandColor = m.line.color.toUpperCase() === '#D93A30' ? '#17171a' : m.line.color;
+  r.row.style.setProperty('--c', bandColor);
   r.row.classList.toggle('band-dark', m.line.color.toUpperCase() === '#FF9900');
   renderFlips(r.departsEl, departText(departDate(m)));
   if (isStale) {
