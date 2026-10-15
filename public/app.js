@@ -391,8 +391,10 @@ function updateRow(r, m, maxDest) {
   /* Line Band (approved B): the row itself carries the line color so the
      whole row reads as one band. Same per-paint write path as the chip —
      no pill/meta/alert touched, anti-flicker contract holds. */
+  /* Dark type on orange AND red bands; white everywhere else. */
   r.row.style.setProperty('--c', m.line.color);
-  r.row.classList.toggle('band-dark', m.line.color.toUpperCase() === '#FF9900');
+  const darkBand = ['#FF9900', '#D93A30'].includes(m.line.color.toUpperCase());
+  r.row.classList.toggle('band-dark', darkBand);
   renderFlips(r.departsEl, departText(departDate(m)));
   if (isStale) {
     // Useful-stale (T4, render-only): frozen last-known wall-clock, greyed
