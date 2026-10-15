@@ -53,7 +53,7 @@ body{
 .station-head h1{margin:0;font-size:clamp(20px,3.4vw,34px);letter-spacing:.14em;color:#f5f1e6;text-shadow:0 0 18px rgba(255,176,0,.25)}
 .station-head .sub{margin:4px 0 0;color:var(--muted);font-size:13px;letter-spacing:.18em}
 .head-clock{text-align:right}
-.clock-label{font-size:12px;letter-spacing:.25em;color:var(--muted);margin-bottom:6px}
+.clock-label{font-size:15px;font-weight:700;letter-spacing:.25em;color:var(--text);margin-bottom:6px}
 .clock-row{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .clock-flips{display:flex;gap:4px;justify-content:flex-end}
 .clock-ampm{font-size:13px;letter-spacing:.15em;color:var(--amber);border:1px solid #4a4a52;
@@ -364,7 +364,7 @@ body.theater .exit-theater{display:block}
   .station-head h1{font-size:18px;letter-spacing:.1em}
   .station-head .sub{font-size:11px;letter-spacing:.12em}
   .head-clock{text-align:left}
-  .clock-label{font-size:10px;margin-bottom:4px}
+  .clock-label{font-size:12px;margin-bottom:4px}
   .clock-row{justify-content:flex-start}
   .clock-ampm{font-size:11px;padding:3px 6px;min-width:2.4em}
   .clock-flips{gap:2px;justify-content:flex-start}
