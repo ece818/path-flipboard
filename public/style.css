@@ -206,7 +206,9 @@ button:hover{border-color:var(--amber)}
   font-size:clamp(14px,2.2vw,20px);line-height:1;white-space:nowrap; /* T6 ambient scale */
   color:var(--text);text-shadow:0 0 10px rgba(245,241,230,.35);
   background:linear-gradient(180deg,#1b1b1f 49.2%,#000 49.2% 50.8%,#0e0e10 50.8%);
-  border-radius:2px;perspective:300px;animation:tileIn .3s backwards;
+  border-radius:2px;perspective:300px;animation:tileIn .3s;
+  /* No `backwards` fill: during per-tile delay tiles rest visible instead
+     of frozen edge-on/invisible (caught mid-flight on slow wall tablets). */
 }
 .tile > span{display:block;box-sizing:border-box;height:50%;padding:0 .06em;overflow:hidden}
 /* leaves must stay opaque while they swing, or the static glyph shows through */
@@ -604,3 +606,22 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
 .flap-board .row.approach,.flap-board .row.due{border-color:rgba(255,255,255,.55);
   box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .flap-board .row.stale{background:#3a3a40}
+/* Light-theme stale keeps its honest grey: the band rule above would
+   otherwise paint dark rows inside a light shell. */
+body.light .flap-board .row.stale{background:#d8d2c4;border-color:#c9c2b0}
+/* Mobile legibility: flat 12px glow-less tiles wash out at phone widths.
+   Slightly larger with a soft shadow; light shadow on the orange band. */
+@media (max-width:700px){
+  .flap-board .row .tile{font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.65)}
+  .flap-board .row.band-dark .tile{text-shadow:0 1px 2px rgba(255,255,255,.55)}
+}
+/* Entrance and flip motion off for reduced-motion users (also removes the
+   frozen-mid-flip state slow devices can get stuck showing). */
+@media (prefers-reduced-motion:reduce){
+  .tile,.flip.flip-go .f-leaf-top,.flip.flip-go .f-leaf-bottom,
+  .tile.flip-go .f-leaf-top,.tile.flip-go .f-leaf-bottom{animation:none}
+  .board-signal .lamp,.clock-flips .colon,.flap-board .row .colon{animation:none}
+}
+/* Light-theme stale keeps its honest grey: the band rule above would
+   otherwise paint dark rows inside a light shell. */
+body.light .flap-board .row.stale{background:#d8d2c4;border-color:#c9c2b0}
