@@ -566,9 +566,8 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
     padding:1.2vmin 1.8vmin;gap:1.5vmin;container-type:normal}
   body.theater .col-dest{flex-direction:column;align-items:stretch;justify-content:center;gap:1vmin}
   body.theater .dest,body.theater .line-chip{flex:0 1 auto}
-  /* Stacked chip removed: redundant here — the band color already names
-     the line and tapping the card filters to it. */
-  body.theater .col-dest .line-chip{display:none}
+  /* In-row chips are hidden globally (see Line Band block); no
+     stacked-layout exception needed. */
   /* round face keeps its own compact chip: rows are container-type:normal
      here so the fullscreen cqh expression would resolve too large */
   body.theater .line-chip{font-size:3.4vmin;padding:1vmin 2vmin}
@@ -603,9 +602,10 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
 .flap-board .row .row-status{color:inherit}
 .flap-board .row .status small{color:inherit;opacity:.85}
 .flap-board .row .dest:hover{filter:none}
-.flap-board .row .line-chip{border:1px solid var(--c);color:#fff;background:rgba(0,0,0,.5);font-weight:700}
-.flap-board .row .line-chip.active{background:var(--c);color:#fff}
-.flap-board .row.band-dark .line-chip.active{color:#0b0b0d}
+/* In-row chips removed (redundant: band color names the line, tapping
+   the card filters to it, footer badges filter too). Kept in the DOM so
+   filter state logic is untouched. */
+.flap-board .row .line-chip{display:none}
 .flap-board .row.approach,.flap-board .row.due{border-color:rgba(255,255,255,.55);
   box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .flap-board .row.stale{background:#3a3a40}
