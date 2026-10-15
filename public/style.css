@@ -606,6 +606,12 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
 .flap-board .row.approach,.flap-board .row.due{border-color:rgba(255,255,255,.55);
   box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .flap-board .row.stale{background:#3a3a40}
+/* Theater departs: the receded dim treatment from the normal board reads
+   washed-out and cramped at wall scale. Full opacity plus row gap so the
+   left time stands with the destination instead of fading behind it. */
+body.theater .flap-board .col-time{opacity:1}
+body.theater .flap-board .row{gap:2vmin}
+body.theater .flap-board .col-dest{padding-left:1vmin}
 /* Light-theme stale keeps its honest grey: the band rule above would
    otherwise paint dark rows inside a light shell. */
 body.light .flap-board .row.stale{background:#d8d2c4;border-color:#c9c2b0}
