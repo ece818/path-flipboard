@@ -27,6 +27,15 @@ Live chain in `loadLive()`: saved Worker URL (`?live=https://…` → `localStor
 - Commit and push every change when done — don't leave work uncommitted.
 - Every UI change must be verified in all three modes: dark (default), `body.light`, and mobile (≤700px).
 
+## Subagent orchestration (always graph it out)
+
+- Default to a subagent graph for any non-trivial task: decompose into a DAG, fan-out independent branches, fan-in merge in the parent. Direct `read`/`grep`/`glob` only for 1–3 known files or a single pattern lookup.
+- `explore` for read-only search ("how does X work", multi-hop finds); `general` only when the branch must write files or run commands.
+- Parallel dispatch = multiple `subagent` calls in ONE message, max 3–5 branches. Separate messages run serially. If B needs A's output, chain sequentially — never force parallel on dependent tasks.
+- Reads fan out, writes serialize: parallel branches are read-only with disjoint scopes. One writer per file set per wave; parent does all merges (this repo: never parallel-write `server.js` + `public/app.js` `NJ_STATIONS`/`LINE_INFO`, or `public/index.html` `?v=` bumps).
+- Stateless handoff: every prompt carries goal + exact file scope + read-only vs write + return format (`file:line` evidence, short summary, no dumps). Repeat load-bearing constraints verbatim — do not assume `AGENTS.md` inheritance. Subagents never spawn sub-subagents; coordination goes through the parent.
+- Explicit fan-in: dedupe, resolve conflicts, check coverage gaps, state partial-failure call (retry / proceed-partial / block). No blind concatenation.
+
 ## Gotchas
 
 - **Cache-bust every CSS/JS change**: bump `?v=N` on BOTH the `<link>` and `<script>` tags in `public/index.html` (mobile caches aggressively).
