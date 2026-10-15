@@ -123,7 +123,7 @@ button:hover{border-color:var(--amber)}
 .hidden{display:none}
 
 .board-head-row{display:grid;grid-template-columns:150px 1fr 150px;gap:10px;
-  font-size:14px;letter-spacing:.3em;color:var(--muted);padding:0 6px 8px}
+  font-size:14px;font-weight:700;letter-spacing:.3em;color:var(--muted);padding:0 6px 8px}
 .board-head-row .col-time{opacity:.75} /* T12: headers mirror D8 order */
 .board-head-row .col-status{color:var(--amber);font-size:14px}
 .col-status{text-align:right}
