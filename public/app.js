@@ -362,6 +362,13 @@ function createRow() {
   // tap destination → filter to that destination; tap chip → filter to that line
   const destActivate = () => r.msg && setDestFilter(r.msg.headSign.toUpperCase());
   r.destEl.addEventListener('click', destActivate);
+  // Whole card (outside destination, chip, and controls) → filter to the
+  // row's line. Same toggle semantics as the chip: tap again clears.
+  row.addEventListener('click', (e) => {
+    if (!r.msg) return;
+    if (e.target.closest('.dest,.line-chip,button,a,select,input')) return;
+    setLineFilter(r.msg.line.short);
+  });
   // keyboard parity for the tile strip (T10): Enter/Space activate like tap
   r.destEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); destActivate(); }
