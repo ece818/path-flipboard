@@ -574,3 +574,33 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
   body.theater .col-due{min-width:25vmin}
   body.theater .exit-theater{position:static;transform:none;margin:1.5vmin auto 0;flex:0 0 auto}
 }
+
+/* ---- Line Band rows (approved B, tablet-wall2-20261015) ----
+   Each row is a solid band of its line color (--c set per paint in
+   updateRow, same write path as the chip — no pill/meta/alert touched).
+   Split-flap mechanics keep running underneath; only the paint goes flat:
+   white type everywhere except the orange band, which takes dark type
+   (.band-dark). Bands hold in both themes (wall-stays-dark rule). */
+.flap-board .row{background:var(--c,#3a3a40);border-color:rgba(0,0,0,.3);
+  border-radius:10px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.4);color:#fff}
+.flap-board .row.band-dark{color:#0b0b0d}
+.flap-board .row:first-child{padding:22px 18px;border-color:rgba(0,0,0,.35);
+  background:var(--c,#3a3a40);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.flap-board .row:first-child.due,.flap-board .row:first-child.approach{
+  border-color:rgba(0,0,0,.35);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.flap-board .row .flip span{background:none;color:inherit;text-shadow:none}
+.flap-board .row .tile{background:none;color:inherit;text-shadow:none}
+.flap-board .row .tile.sp{background:none}
+.flap-board .row .colon{color:inherit}
+.flap-board .row .col-time{opacity:1}
+.flap-board .row .col-time .flip span{color:inherit;text-shadow:none}
+.flap-board .row .status .flip span{color:inherit;text-shadow:none}
+.flap-board .row .row-status{color:inherit}
+.flap-board .row .status small{color:inherit;opacity:.85}
+.flap-board .row .dest:hover{filter:none}
+.flap-board .row .line-chip{border-color:currentColor;color:inherit;background:transparent}
+.flap-board .row .line-chip.active{background:rgba(0,0,0,.28);color:#fff}
+.flap-board .row.band-dark .line-chip.active{background:rgba(255,255,255,.4);color:#0b0b0d}
+.flap-board .row.approach,.flap-board .row.due{border-color:rgba(255,255,255,.55);
+  box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.flap-board .row.stale{background:#3a3a40}

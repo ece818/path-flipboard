@@ -381,6 +381,11 @@ function updateRow(r, m, maxDest) {
   r.row.classList.toggle('approach', st.cls === 'approach');
   r.row.classList.toggle('due', st.cls === 'due');
   r.chipEl.style.setProperty('--c', m.line.color);
+  /* Line Band (approved B): the row itself carries the line color so the
+     whole row reads as one band. Same per-paint write path as the chip —
+     no pill/meta/alert touched, anti-flicker contract holds. */
+  r.row.style.setProperty('--c', m.line.color);
+  r.row.classList.toggle('band-dark', m.line.color.toUpperCase() === '#FF9900');
   renderFlips(r.departsEl, departText(departDate(m)));
   if (isStale) {
     // Useful-stale (T4, render-only): frozen last-known wall-clock, greyed
