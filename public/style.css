@@ -598,9 +598,8 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
 .flap-board .row .row-status{color:inherit}
 .flap-board .row .status small{color:inherit;opacity:.85}
 .flap-board .row .dest:hover{filter:none}
-.flap-board .row .line-chip{border-color:currentColor;color:inherit;background:transparent}
-.flap-board .row .line-chip.active{background:rgba(0,0,0,.28);color:#fff}
-.flap-board .row.band-dark .line-chip.active{background:rgba(255,255,255,.4);color:#0b0b0d}
+.flap-board .row .line-chip{border:none;color:#fff;background:rgba(0,0,0,.45);font-weight:700}
+.flap-board .row .line-chip.active{background:#fff;color:var(--c)}
 .flap-board .row.approach,.flap-board .row.due{border-color:rgba(255,255,255,.55);
   box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .flap-board .row.stale{background:#3a3a40}
