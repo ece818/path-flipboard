@@ -566,6 +566,9 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
     padding:1.2vmin 1.8vmin;gap:1.5vmin;container-type:normal}
   body.theater .col-dest{flex-direction:column;align-items:stretch;justify-content:center;gap:1vmin}
   body.theater .dest,body.theater .line-chip{flex:0 1 auto}
+  /* Stacked chip packs right, toward the countdown column, instead of
+     hugging the left edge under the destination. */
+  body.theater .col-dest .line-chip{align-self:flex-end}
   /* round face keeps its own compact chip: rows are container-type:normal
      here so the fullscreen cqh expression would resolve too large */
   body.theater .line-chip{font-size:3.4vmin;padding:1vmin 2vmin}
