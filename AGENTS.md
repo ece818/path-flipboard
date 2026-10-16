@@ -36,6 +36,14 @@ Live chain in `loadLive()`: saved Worker URL (`?live=https://…` → `localStor
 - Stateless handoff: every prompt carries goal + exact file scope + read-only vs write + return format (`file:line` evidence, short summary, no dumps). Repeat load-bearing constraints verbatim — do not assume `AGENTS.md` inheritance. Subagents never spawn sub-subagents; coordination goes through the parent.
 - Explicit fan-in: dedupe, resolve conflicts, check coverage gaps, state partial-failure call (retry / proceed-partial / block). No blind concatenation.
 
+## Graph mentality (research synthesis, arxiv:2506.18019v1 + GraphRAG + LangGraph)
+
+- **Workflow AS graph:** `StateGraph(State) + nodes (LLM/tool fn) + edges (deterministic/conditional) + checkpointer`. This is the orchestration model above — cycles, retries, interrupt/resume, audit trails. Prefer over prompt-spaghetti for multi-step work.
+- **Task decomposition AS DAG:** subtasks = nodes, dependencies = edges (Task Dependency Graph, must stay acyclic). Plan paths/subgraphs with LLM, RL, or GNN — never execute with dead loops.
+- **Reasoning AS graph:** CoT (linear) → Tree-of-Thoughts (branch + evaluate) → Graph-of-Thoughts (merge/split thoughts). Use for planning search with pruning.
+- **Memory/knowledge AS graph:** episodic (events) + semantic (entities) + procedural (workflows) as triples. Read = entity-link + 2–4 hop traverse; Write = timestamped nodes/edges. Prefer over raw vector chunks for multi-hop reasoning.
+- **GraphRAG pipeline:** query processor (NER → nodes/edges) → retriever (BFS/DFS + community summaries) → organizer (prune/rerank) → generator (LLM). Use for global/complex queries; vector RAG for single-hop similarity only.
+
 ## Gotchas
 
 - **Cache-bust every CSS/JS change**: bump `?v=N` on BOTH the `<link>` and `<script>` tags in `public/index.html` (mobile caches aggressively).
