@@ -146,7 +146,7 @@ body.light .filter-hint{background:#fdf6e0;border-color:#d3b34c}
 .row.stale .line-chip{opacity:.75}
 .row.stale .row-status{color:var(--muted)}
 .flips{display:flex;gap:3px;align-items:center}
-.row-status{display:flex;gap:2px;justify-content:flex-end;font-size:12px;letter-spacing:.18em;margin-top:6px;color:var(--amber);min-height:1.6em}
+.row-status{display:flex;gap:2px;justify-content:flex-end;font-size:12px;font-weight:700;letter-spacing:.18em;margin-top:6px;color:var(--amber);min-height:1.6em}
 .row-status .tile{font-size:inherit;min-width:0;color:inherit;text-shadow:none;letter-spacing:normal}
 .row-status .tile > span{padding:0 .03em}
 .row-status.hidden{display:none}
