@@ -15,7 +15,7 @@ colors:
   warning: "#ffb000"           # amber accents, pill text
   error: "#ff4444"             # service alerts
 typography:
-  display:  # tile voice: destinations are Share Tech Mono split-flap tiles; Inter 800 remains for wordmark/roundel/labels only
+  display:  # tile voice: destinations are Share Tech Mono split-flap tiles; Inter remains for wordmark/labels only
     fontFamily: Share Tech Mono
     fontWeight: 400
     fontSize: clamp(32px, 6vw, 54px)
@@ -80,7 +80,7 @@ Line colors double as the interactive filter language already on the live board 
 
 ## Typography
 
-Destinations render as Share Tech Mono split-flap tiles with tabular figures so slots never shift width; Inter 800 remains for the wordmark, roundel, and labels only (station-signage register). Display size is clamped to viewport width with a larger hero step for the first train. Loading via Google Fonts with a `document.fonts.ready` gate before measured layout. Note: the index.html font link (Inter 400/600/700) now serves wordmark/labels only — no action.
+Destinations render as Share Tech Mono split-flap tiles with tabular figures so slots never shift width; Inter remains for the wordmark and labels only (station-signage register). The header mark is the official PATH logo image (`public/path-logo.png`). Display size is clamped to viewport width with the first train at equal height. Loading via Google Fonts with a `document.fonts.ready` gate before measured layout. Note: the index.html font link (Inter 400/600/700) now serves wordmark/labels only — no action.
 
 ## Layout
 
