@@ -43,12 +43,9 @@ body{
 /* header */
 .station-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .head-left{display:flex;gap:14px;align-items:center}
-.path-roundel{
-  width:64px;height:64px;border-radius:50%;display:grid;place-items:center;
-  font-family:Inter,sans-serif;font-weight:800;letter-spacing:1px;font-size:15px;
-  color:#fff;background:radial-gradient(circle at 35% 30%,#c74338,#7e1a12);
-  border:4px solid #d8d2c4;box-shadow:0 4px 18px rgba(0,0,0,.6), inset 0 2px 6px rgba(0,0,0,.35);
-  text-shadow:0 1px 3px rgba(0,0,0,.8);
+.path-roundel-img{
+  height:64px;width:auto;object-fit:contain;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
 }
 .station-head h1{margin:0;font-size:clamp(20px,3.4vw,34px);letter-spacing:.14em;color:#f5f1e6;text-shadow:0 0 18px rgba(255,176,0,.25)}
 .station-head .sub{margin:4px 0 0;color:var(--muted);font-size:13px;letter-spacing:.18em}
@@ -369,7 +366,7 @@ body.theater .exit-theater{display:block}
   .board-head-row{display:none}
   .station-shell{padding:16px 10px 40px}
   .station-head{gap:10px;margin-bottom:12px}
-  .path-roundel{width:44px;height:44px;font-size:12px;border-width:3px}
+  .path-roundel-img{height:44px}
   .station-head h1{font-size:18px;letter-spacing:.1em}
   .station-head .sub{font-size:11px;letter-spacing:.12em}
   .head-clock{text-align:left}
@@ -452,7 +449,6 @@ body.light{
     linear-gradient(180deg,#f5f1e6,#e3dcc9);
 }
 body.light .station-head h1{color:#1c1c1f;text-shadow:none}
-body.light .path-roundel{border-color:#fff}
 body.light .clock-ampm,
 body.light select,
 body.light button,
