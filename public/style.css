@@ -119,6 +119,10 @@ button:hover{border-color:var(--amber)}
 .filter-bar button{font:inherit;font-size:13px;background:transparent;border:1px solid #5a4413;color:var(--amber);
   border-radius:4px;padding:1px 8px;cursor:pointer;box-shadow:none;margin-left:auto}
 .filter-bar button:hover{border-color:var(--amber)}
+.filter-hint{margin:0 0 10px;font-size:11px;letter-spacing:.14em;color:var(--amber);background:#1a1206;border:1px solid #5a4413;border-radius:6px;padding:0 10px;cursor:pointer;min-height:var(--tap);display:grid;place-items:center;text-align:center}
+.filter-hint.hidden{display:none}
+body.theater .filter-hint{display:none}
+body.light .filter-hint{background:#fdf6e0;border-color:#d3b34c}
 .alert{margin:0 0 12px;background:#2a0d0d;border:1px solid #7f1d1d;color:#ffb4b4;padding:10px 12px;border-radius:6px;font-size:13px;letter-spacing:.04em}
 .hidden{display:none}
 
@@ -350,6 +354,11 @@ body.theater .row-status .tile > span{padding:0 .03em}
 @media (max-height:600px){
   body.theater .flap-board .row:nth-child(n+4){display:none}
 }
+/* +N MORE pill (D4): short theater viewports cap at 3 rows — this pill says
+   the board is partial, not the whole truth. .board-frame is position:relative. */
+.more-line{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:12px;letter-spacing:.2em;color:var(--muted);background:rgba(0,0,0,.65);border:1px solid #3a3a40;border-radius:9999px;padding:4px 12px;pointer-events:none;z-index:5;white-space:nowrap}
+.more-line.hidden{display:none}
+body:not(.theater) .more-line{display:none}
 /* small exit button — only visible in theater mode, docked directly below the board */
 .exit-theater{display:none;margin:10px auto 0;width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;
   background:rgba(0,0,0,.65);color:var(--muted);border:1px solid #3a3a40;cursor:pointer}
@@ -583,12 +592,12 @@ body.light .exit-theater{background:rgba(255,255,255,.85);border-color:#c9c2b0}
    Each row is a solid band of its line color (--c set per paint in
    updateRow, same write path as the chip — no pill/meta/alert touched).
    Split-flap mechanics keep running underneath; only the paint goes flat:
-   white type everywhere except the orange band, which takes dark type
+   white type everywhere except the orange and red bands, which take dark type
    (.band-dark). Bands hold in both themes (wall-stays-dark rule). */
 .flap-board .row{background:var(--c,#3a3a40);border-color:rgba(0,0,0,.3);
   border-radius:10px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.4);color:#fff}
 .flap-board .row.band-dark{color:#0b0b0d}
-.flap-board .row:first-child{padding:22px 18px;border-color:rgba(0,0,0,.35);
+.flap-board .row:first-child{padding:14px 18px;border-color:rgba(0,0,0,.35);
   background:var(--c,#3a3a40);box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .flap-board .row:first-child.due,.flap-board .row:first-child.approach{
   border-color:rgba(0,0,0,.35);box-shadow:0 8px 24px rgba(0,0,0,.4)}
@@ -619,7 +628,7 @@ body.theater .flap-board .col-dest{padding-left:1vmin}
    otherwise paint dark rows inside a light shell. */
 body.light .flap-board .row.stale{background:#d8d2c4;border-color:#c9c2b0}
 /* Mobile legibility: flat 12px glow-less tiles wash out at phone widths.
-   Slightly larger with a soft shadow; light shadow on the orange band. */
+   Slightly larger with a soft shadow; light shadow on the orange and red bands. */
 @media (max-width:700px){
   .flap-board .row .tile{font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.65)}
   .flap-board .row.band-dark .tile{text-shadow:0 1px 2px rgba(255,255,255,.55)}

@@ -10,6 +10,8 @@ const fsBtn = document.getElementById('fsBtn');
 const autoRefresh = document.getElementById('autoRefresh');
 const clockEl = document.getElementById('stationClock');
 const clockDate = document.getElementById('clockDate');
+const moreLine = document.getElementById('moreLine');
+const filterHint = document.getElementById('filterHint');
 
 const STATION_NAMES = { NWK:'NEWARK', HAR:'HARRISON', JSQ:'JOURNAL SQUARE', GRV:'GROVE STREET', EXP:'EXCHANGE PLACE', NEW:'NEWPORT', HOB:'HOBOKEN', WTC:'WORLD TRADE CENTER', CHR:'CHRISTOPHER ST', '09S':'9TH STREET', '14S':'14TH STREET', '23S':'23RD STREET', '33S':'33RD STREET' };
 
@@ -243,6 +245,20 @@ const filterBar = document.getElementById('filterBar');
 const filterText = document.getElementById('filterText');
 const clearFilterBtn = document.getElementById('clearFilter');
 
+/* First-run filter hint (blanket-approved): visible until the rider has used
+   a filter once, never in theater. Dismiss persists via guarded localStorage. */
+let hintSeen = false;
+try { hintSeen = localStorage.getItem('path:filterHintSeen') === '1'; } catch {}
+function updateFilterHint() {
+  if (!filterHint) return;
+  filterHint.classList.toggle('hidden', hintSeen || document.body.classList.contains('theater'));
+}
+function dismissFilterHint() {
+  hintSeen = true;
+  try { localStorage.setItem('path:filterHintSeen', '1'); } catch {}
+  updateFilterHint();
+}
+
 function lineMatches(m, f) {
   if (!f) return true;
   if (f === 'JSQ-33') return m.line.short.startsWith('JSQ-33'); // badge covers JSQ-33 + via HOB
@@ -267,16 +283,19 @@ function updateFilterUI() {
   });
   localStorage.setItem('path:lineFilter', lineFilter || '');
   localStorage.setItem('path:destFilter', destFilter || '');
+  updateFilterHint();
 }
 function setLineFilter(value) {
   lineFilter = (lineFilter === value) ? null : value;
   if (lineFilter) destFilter = null;
+  if (lineFilter) { hintSeen = true; try { localStorage.setItem('path:filterHintSeen', '1'); } catch {} }
   updateFilterUI();
   if (lastData) buildBoard(lastData);
 }
 function setDestFilter(value) {
   destFilter = (destFilter === value) ? null : value;
   if (destFilter) lineFilter = null;
+  if (destFilter) { hintSeen = true; try { localStorage.setItem('path:filterHintSeen', '1'); } catch {} }
   updateFilterUI();
   if (lastData) buildBoard(lastData);
 }
@@ -422,6 +441,17 @@ function updateRow(r, m, maxDest) {
   renderStatus(r.statusEl, statusLabel(m, st));
 }
 
+/* +N MORE pill (D4): counts rows hidden by the CSS short-viewport cap
+   (style.display untouched, but offsetParent null) as opposed to JS-hidden
+   departed rows. Render-only — no pill/meta/alert touched. */
+function updateMoreLine() {
+  if (!moreLine) return;
+  const n = rowRefs.filter(r => r.row.style.display === '' && r.row.offsetParent === null).length;
+  const show = document.body.classList.contains('theater') && n > 0;
+  moreLine.classList.toggle('hidden', !show);
+  if (show) moreLine.textContent = `+${n} MORE`;
+}
+
 function buildBoard(data) {
   lastData = data;
   trains = data.destinations.flatMap(d => d.messages.map(m => ({ ...m, dir: d.label })));
@@ -438,6 +468,7 @@ function buildBoard(data) {
     scheduleEl.innerHTML = `<div class="empty tappable">No trains reported — tap to retry</div>`;
     scheduleEl.querySelector('.empty').addEventListener('click', () => loadStation(stationSelect.value));
     rowRefs = [];
+    updateMoreLine();
     return;
   }
   if (!visible.length) {
@@ -445,6 +476,7 @@ function buildBoard(data) {
     scheduleEl.innerHTML = `<div class="empty tappable">No ${label} trains — tap to clear</div>`;
     scheduleEl.querySelector('.empty').addEventListener('click', clearFilter);
     rowRefs = [];
+    updateMoreLine();
     return;
   }
   /* Reconciliation: match live rows to the new train list by identity — order
@@ -478,6 +510,7 @@ function buildBoard(data) {
   for (const r of spares) r.row.remove();
   rowRefs = next.map(i => i.r);
   fitTileStrips();
+  updateMoreLine();
 }
 
 /* Beat scheduler: status text, row classes, and header clock on wall-clock beats.
@@ -512,6 +545,7 @@ function beatAligned() {
     r.row.classList.toggle('due', st.cls === 'due');
     renderStatus(r.statusEl, statusLabel(r.msg, st));
   }
+  updateMoreLine(); // trains depart over time so the hidden count changes
   tickClock();
   fireFlips(); // one reflow for every armed restart this beat
   if (diagBox) {
@@ -861,7 +895,8 @@ function renderData(data, normalized) {
     setMeta(`${STATION_NAMES[normalized]} • UPDATED ${lastUpd} • ${src} • AUTO ${autoRefresh.checked ? 'ON' : 'OFF'}${worstBeatMs > 2000 ? ` • TIMER MAX ${(worstBeatMs / 1000).toFixed(1)}S` : ''}`);
   }
   if (isStale) {
-    setStatus('error', 'STALE');
+    setStatus('error', 'STALE — TAP FOR DETAILS');
+    statusPill.title = 'Tap for stale details';
     // Collapsed alert (D11): pill + meta ("SNAPSHOT nM OLD • UPDATED …")
     // carry stale state; the box only opens on pill tap for details.
     if (lastLiveErrors.length) alertBox.dataset.diag = lastLiveErrors.join(' | ');
@@ -872,6 +907,7 @@ function renderData(data, normalized) {
     delete alertBox.dataset.showDiag;
     delete alertBox.dataset.short;
     alertBox.classList.add('hidden');
+    statusPill.title = '';
     setStatus('', 'LIVE');
   }
 }
@@ -970,6 +1006,7 @@ async function toggleTheater() {
     fsBtn.textContent = on ? '✕' : '⛶';
     fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
     fitTileStrips();
+    updateFilterHint();
     if (on) setKeepAwake(true); // fullscreen implies stay-awake
     else evalWake();
     pokeIdle();
@@ -981,6 +1018,7 @@ document.addEventListener('fullscreenchange', () => {
   fsBtn.textContent = on ? '✕' : '⛶';
   fsBtn.title = on ? 'Exit focus mode' : 'Fullscreen — just the board';
   fitTileStrips();
+  updateFilterHint();
   if (on) setKeepAwake(true); // fullscreen implies stay-awake
   else evalWake();
   pokeIdle();
@@ -1018,6 +1056,12 @@ document.addEventListener('keydown', (e) => {
   toggleTheater();
 });
 clearFilterBtn.addEventListener('click', clearFilter);
+if (filterHint) {
+  filterHint.addEventListener('click', dismissFilterHint);
+  filterHint.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismissFilterHint(); }
+  });
+}
 alertBox.style.cursor = 'pointer';
 alertBox.addEventListener('click', () => {
   if (alertBox.dataset.showDiag) {
